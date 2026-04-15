@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact | David Maus Jr.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-logo">Logo</a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="brand-deals.html">Brand Partnerships</a></li>
+        <li><a href="product-picks.html">Product Picks</a></li>
+        <li><a href="contact.html" class="active">Contact</a></li>
+      </ul>
+      <button class="hamburger" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="nav-overlay"></div>
+  <div class="mobile-drawer">
+    <div class="drawer-header">
+      <div class="nav-logo">Logo</div>
+      <button class="drawer-close" aria-label="Close menu">&times;</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="brand-deals.html">Brand Partnerships</a>
+      <a href="product-picks.html">Product Picks</a>
+      <a href="contact.html" class="active">Contact</a>
+    </nav>
+    <div class="drawer-footer">
+      <div class="drawer-social">
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="YouTube">YT</a>
+        <a href="#" aria-label="TikTok">TT</a>
+        <a href="#" aria-label="Twitter">X</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero hero-page">
+    <div class="hero-bg">Contact Hero Image</div>
+    <div class="hero-content">
+      <h1>Contact</h1>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section class="section">
+    <div class="container">
+      <div class="contact-grid">
+        <!-- Form -->
+        <div class="reveal-left">
+          <h2 style="font-size:1.6rem; margin-bottom:8px;">Get In Touch</h2>
+          <p style="color:var(--dark-gray); margin-bottom:32px;">Have a question, idea, or just want to say what's up? Drop a message below.</p>
+          <form action="#">
+            <div class="form-group">
+              <label for="contact-name">Name</label>
+              <input type="text" id="contact-name" placeholder="Your name">
+            </div>
+            <div class="form-group">
+              <label for="contact-email">Email</label>
+              <input type="email" id="contact-email" placeholder="you@email.com">
+            </div>
+            <div class="form-group">
+              <label for="contact-subject">Subject</label>
+              <input type="text" id="contact-subject" placeholder="What's this about?">
+            </div>
+            <div class="form-group">
+              <label for="contact-message">Message</label>
+              <textarea id="contact-message" placeholder="Your message..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-dark">Send Message</button>
+          </form>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="contact-info reveal-right">
+          <h3>Contact Info</h3>
+
+          <div class="contact-info-item">
+            <div class="icon-placeholder">@</div>
+            <div>
+              <strong>Email</strong>
+              <span>placeholder@email.com</span>
+            </div>
+          </div>
+
+          <div class="contact-info-item">
+            <div class="icon-placeholder">Ph</div>
+            <div>
+              <strong>Phone</strong>
+              <span>(000) 000-0000</span>
+            </div>
+          </div>
+
+          <div class="contact-info-item">
+            <div class="icon-placeholder">Loc</div>
+            <div>
+              <strong>Location</strong>
+              <span>City, State</span>
+            </div>
+          </div>
+
+          <div class="social-links">
+            <a href="#" class="social-link" aria-label="Instagram">IG</a>
+            <a href="#" class="social-link" aria-label="YouTube">YT</a>
+            <a href="#" class="social-link" aria-label="TikTok">TT</a>
+            <a href="#" class="social-link" aria-label="Twitter">X</a>
+          </div>
+
+          <div class="map-placeholder placeholder-img">Map Embed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo">Logo</div>
+        <nav class="footer-nav">
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="brand-deals.html">Brand Partnerships</a>
+          <a href="product-picks.html">Product Picks</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram">IG</a>
+          <a href="#" aria-label="YouTube">YT</a>
+          <a href="#" aria-label="TikTok">TT</a>
+          <a href="#" aria-label="Twitter">X</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 David Maus Jr. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
