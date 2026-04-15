@@ -14,12 +14,13 @@
   <!-- Navigation -->
   <nav class="navbar">
     <div class="container">
-      <a href="index.html" class="nav-logo">Logo</a>
+      <a href="index.html" class="nav-logo"><img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ Logo"></a>
       <ul class="nav-links">
         <li><a href="index.html" class="active">Home</a></li>
         <li><a href="about.html">About</a></li>
         <li><a href="brand-deals.html">Brand Partnerships</a></li>
         <li><a href="product-picks.html">Product Picks</a></li>
+        <li><a href="newsletter.html">Newsletter</a></li>
         <li><a href="contact.html">Contact</a></li>
       </ul>
       <button class="hamburger" aria-label="Toggle navigation">
@@ -33,7 +34,7 @@
   <div class="nav-overlay"></div>
   <div class="mobile-drawer">
     <div class="drawer-header">
-      <div class="nav-logo">Logo</div>
+      <div class="nav-logo"><img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ Logo"></div>
       <button class="drawer-close" aria-label="Close menu">&times;</button>
     </div>
     <nav class="drawer-nav">
@@ -41,6 +42,7 @@
       <a href="about.html">About</a>
       <a href="brand-deals.html">Brand Partnerships</a>
       <a href="product-picks.html">Product Picks</a>
+      <a href="newsletter.html">Newsletter</a>
       <a href="contact.html">Contact</a>
     </nav>
     <div class="drawer-footer">
@@ -55,17 +57,17 @@
 
   <!-- Hero -->
   <section class="hero">
-    <div class="hero-bg">Hero Image</div>
+    <div class="hero-bg"><img src="Assets/Davids%20Photos/hyrox%201.jpg" alt="David Maus Jr. crossing the finish line" style="object-position: center 35%;"></div>
     <div class="hero-content">
       <h1>Health. Wellness. Lifestyle.</h1>
-      <p class="subtitle">Creator. Athlete. Entrepreneur.</p>
+      <p class="subtitle">Faith. Family. Fitness.</p>
     </div>
   </section>
 
   <!-- Newsletter CTA -->
   <div class="newsletter-cta">
     <h3>Stay In The Loop</h3>
-    <p>Join the community and get weekly tips on health, wellness, and living your best life.</p>
+    <p>Real talk on faith, fitness, and living with purpose. No fluff &mdash; just what's actually working.</p>
     <form class="newsletter-form" action="#">
       <input type="email" placeholder="Enter your email" aria-label="Email address">
       <button type="submit" class="btn btn-yellow">Subscribe</button>
@@ -76,11 +78,11 @@
   <section class="section">
     <div class="container">
       <div class="about-preview">
-        <div class="placeholder-img reveal-left">Portrait Photo</div>
+        <div class="placeholder-img reveal-left"><img src="Assets/Davids%20Photos/brand-deals.jpg" alt="David Maus Jr." style="object-position: center center;"></div>
         <div class="about-preview-text reveal-right">
           <h2>Meet David</h2>
-          <p class="intro-text">Dedicated to helping others unlock their full potential through fitness, nutrition, and mindset.</p>
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.</p>
+          <p class="intro-text">He left a 20-year career as an automotive VP to answer a calling he couldn't ignore. What followed changed everything.</p>
+          <p>David Maus Jr. walked away from overseeing 400+ employees to pursue something that made no sense on paper and everything sense in his soul. A low-budget cold plunge video, a surrendered heart, and a commitment to showing up every day turned into one of the most authentic health and wellness channels on YouTube. Over a million dollars in products sold monthly. But more importantly, lives being changed. His message is simple: your health, your faith, and your purpose are worth fighting for.</p>
           <a href="about.html" class="btn btn-dark">Learn More</a>
         </div>
       </div>
@@ -137,16 +139,39 @@
     </div>
   </section>
 
+  <!-- YouTube Latest Videos -->
+  <section class="section yt-section">
+    <div class="container">
+      <div class="yt-header reveal-up">
+        <h2>Latest on YouTube</h2>
+        <a href="https://www.youtube.com/@DavidMausJr" target="_blank" rel="noopener noreferrer" class="btn btn-yellow">Subscribe</a>
+      </div>
+      <div class="yt-carousel-track" id="yt-carousel">
+        <div class="yt-card yt-skeleton"><div class="yt-thumb-wrap"></div><div class="yt-skel-line"></div><div class="yt-skel-line short"></div></div>
+        <div class="yt-card yt-skeleton"><div class="yt-thumb-wrap"></div><div class="yt-skel-line"></div><div class="yt-skel-line short"></div></div>
+        <div class="yt-card yt-skeleton"><div class="yt-thumb-wrap"></div><div class="yt-skel-line"></div><div class="yt-skel-line short"></div></div>
+        <div class="yt-card yt-skeleton"><div class="yt-thumb-wrap"></div><div class="yt-skel-line"></div><div class="yt-skel-line short"></div></div>
+        <div class="yt-card yt-skeleton"><div class="yt-thumb-wrap"></div><div class="yt-skel-line"></div><div class="yt-skel-line short"></div></div>
+        <div class="yt-card yt-skeleton"><div class="yt-thumb-wrap"></div><div class="yt-skel-line"></div><div class="yt-skel-line short"></div></div>
+      </div>
+      <div class="yt-fallback" id="yt-fallback" style="display:none;">
+        <p>Check out David's latest content on YouTube.</p>
+        <a href="https://www.youtube.com/@DavidMausJr" target="_blank" rel="noopener noreferrer" class="btn btn-yellow">Watch on YouTube</a>
+      </div>
+    </div>
+  </section>
+
   <!-- Footer -->
   <footer class="footer">
     <div class="container">
       <div class="footer-content">
-        <div class="footer-logo">Logo</div>
+        <div class="footer-logo"><img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ Logo"></div>
         <nav class="footer-nav">
           <a href="index.html">Home</a>
           <a href="about.html">About</a>
           <a href="brand-deals.html">Brand Partnerships</a>
           <a href="product-picks.html">Product Picks</a>
+          <a href="newsletter.html">Newsletter</a>
           <a href="contact.html">Contact</a>
         </nav>
         <div class="footer-social">

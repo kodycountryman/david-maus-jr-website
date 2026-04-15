@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Newsletter | David Maus Jr.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-logo"><img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ Logo"></a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="brand-deals.html">Brand Partnerships</a></li>
+        <li><a href="product-picks.html">Product Picks</a></li>
+        <li><a href="newsletter.html" class="active">Newsletter</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+      <button class="hamburger" aria-label="Toggle navigation">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+  <div class="nav-overlay"></div>
+  <div class="mobile-drawer">
+    <div class="drawer-header">
+      <div class="nav-logo"><img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ Logo"></div>
+      <button class="drawer-close" aria-label="Close menu">&times;</button>
+    </div>
+    <nav class="drawer-nav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="brand-deals.html">Brand Partnerships</a>
+      <a href="product-picks.html">Product Picks</a>
+      <a href="newsletter.html" class="active">Newsletter</a>
+      <a href="contact.html">Contact</a>
+    </nav>
+    <div class="drawer-footer">
+      <div class="drawer-social">
+        <a href="#" aria-label="Instagram">IG</a>
+        <a href="#" aria-label="YouTube">YT</a>
+        <a href="#" aria-label="TikTok">TT</a>
+        <a href="#" aria-label="Twitter">X</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hero -->
+  <section class="hero hero-page">
+    <div class="hero-bg"><img src="Assets/Davids%20Photos/action%203.jpg" alt="David Maus Jr. training with a group" style="object-position: center center;"></div>
+    <div class="hero-content">
+      <h1>The Good Stuff</h1>
+      <p class="subtitle">Live Life like it Matters, because it does.</p>
+    </div>
+  </section>
+
+  <!-- Subscribe Section -->
+  <section class="section" style="padding-bottom: 0;">
+    <div class="container" style="max-width: 680px;">
+      <div class="newsletter-embed-wrapper reveal-up">
+        <h2 style="text-align:center; font-size:1.6rem; margin-bottom:12px;">Join the Community</h2>
+        <p style="text-align:center; color:var(--dark-gray); margin-bottom:32px;">Real talk on faith, cold plunge, biohacking, fitness, and living a life that actually means something. No ads. No fluff. Just the good stuff, straight from someone who's living it.</p>
+
+        <!-- BEEHIIV EMBED: Replace the src below with your embed URL from:
+             Beehiiv Dashboard → Grow → Subscribe Forms → Embed
+             The src will look like: https://embeds.beehiiv.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -->
+        <iframe
+          src="https://embeds.beehiiv.com/placeholder"
+          data-test-id="beehiiv-embed"
+          width="100%"
+          height="320"
+          frameborder="0"
+          scrolling="no"
+          style="border-radius:8px; border:1px solid #e5e7eb; margin:0; background-color:transparent;"
+          title="Subscribe to the Good Stuff newsletter">
+        </iframe>
+
+        <!-- Fallback CTA shown if iframe fails or embed not yet configured -->
+        <div class="beehiiv-cta">
+          <p>Or subscribe directly at</p>
+          <a href="https://dmjr.beehiiv.com" target="_blank" rel="noopener noreferrer" class="btn btn-yellow">dmjr.beehiiv.com</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent Posts -->
+  <section class="section">
+    <div class="container">
+      <h2 class="reveal-up" style="text-align:center; font-size:2rem; margin-bottom:16px;">Recent Posts</h2>
+      <p class="reveal-up" style="text-align:center; color:var(--dark-gray); margin-bottom:48px;">Tried, tested, and true — straight from the newsletter archive.</p>
+
+      <!-- Post grid — populated by JS -->
+      <div class="post-grid reveal-stagger" id="post-grid">
+        <!-- Loading skeletons -->
+        <div class="post-card post-skeleton"><div class="post-skeleton-img"></div><div class="post-skeleton-body"><div class="post-skeleton-line short"></div><div class="post-skeleton-line"></div><div class="post-skeleton-line medium"></div></div></div>
+        <div class="post-card post-skeleton"><div class="post-skeleton-img"></div><div class="post-skeleton-body"><div class="post-skeleton-line short"></div><div class="post-skeleton-line"></div><div class="post-skeleton-line medium"></div></div></div>
+        <div class="post-card post-skeleton"><div class="post-skeleton-img"></div><div class="post-skeleton-body"><div class="post-skeleton-line short"></div><div class="post-skeleton-line"></div><div class="post-skeleton-line medium"></div></div></div>
+      </div>
+
+      <!-- Fallback if JS/fetch fails -->
+      <div class="posts-fallback" id="posts-fallback" style="display:none;">
+        <p style="color:var(--dark-gray); margin-bottom:24px;">Read all posts on Beehiiv.</p>
+        <a href="https://dmjr.beehiiv.com" target="_blank" rel="noopener noreferrer" class="btn btn-dark">Visit the Archive</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-logo"><img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ Logo"></div>
+        <nav class="footer-nav">
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="brand-deals.html">Brand Partnerships</a>
+          <a href="product-picks.html">Product Picks</a>
+          <a href="newsletter.html">Newsletter</a>
+          <a href="contact.html">Contact</a>
+        </nav>
+        <div class="footer-social">
+          <a href="#" aria-label="Instagram">IG</a>
+          <a href="#" aria-label="YouTube">YT</a>
+          <a href="#" aria-label="TikTok">TT</a>
+          <a href="#" aria-label="Twitter">X</a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2026 David Maus Jr. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
