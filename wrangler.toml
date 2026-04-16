@@ -1,20 +1,27 @@
-name = "david-maus-jr"
+name = "dmjr"
+main = "_worker.js"
 compatibility_date = "2026-04-16"
 compatibility_flags = ["nodejs_compat"]
-pages_build_output_dir = "."
 
-# D1 binding — exposed as env.DB in Functions
+# Serve static files from the repo root as assets, with SPA-style HTML routing.
+# env.ASSETS.fetch(request) is used inside _worker.js for non-API paths.
+[assets]
+directory = "."
+binding = "ASSETS"
+
+# D1 binding → env.DB
 [[d1_databases]]
 binding = "DB"
 database_name = "dmj-content"
 database_id = "2ebc7e22-7b75-4d65-a5fd-5eb47b469398"
 
-# R2 binding — exposed as env.MEDIA in Functions
+# R2 binding → env.MEDIA
 [[r2_buckets]]
 binding = "MEDIA"
 bucket_name = "dmj-media"
 
-# Env vars for local dev (production values set via Cloudflare dashboard)
-[vars]
-JWT_SECRET = "bSL7MF5NG+oLlajlIgZNRChKsVpWUuEedbtzg30hkGwtobOpK0TSDX6yI9jE93hL"
-PUBLIC_MEDIA_URL = "https://pub-placeholder.r2.dev"
+# Exclude non-site files from being bundled as static assets
+[[rules]]
+type = "Text"
+globs = ["README.md"]
+fallthrough = false

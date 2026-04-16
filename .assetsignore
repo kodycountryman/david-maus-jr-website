@@ -1,0 +1,15 @@
+_worker.js
+wrangler.toml
+package.json
+package-lock.json
+node_modules/**
+functions/**
+.wrangler/**
+.claude/**
+.git/**
+.gitignore
+.assetsignore
+.DS_Store
+.dev.vars
+README.md
+*.md
