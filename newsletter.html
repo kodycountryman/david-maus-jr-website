@@ -46,20 +46,20 @@
     </nav>
     <div class="drawer-footer">
       <div class="drawer-social">
-        <a href="#" aria-label="Instagram">IG</a>
-        <a href="#" aria-label="YouTube">YT</a>
-        <a href="#" aria-label="TikTok">TT</a>
-        <a href="#" aria-label="Twitter">X</a>
+        <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+        <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+        <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+        <a href="#" data-social="twitter" aria-label="Twitter">X</a>
       </div>
     </div>
   </div>
 
   <!-- Hero -->
   <section class="hero hero-page">
-    <div class="hero-bg"><img src="Assets/Davids%20Photos/action%203.jpg" alt="David Maus Jr. training with a group" style="object-position: center center;"></div>
+    <div class="hero-bg"><img data-content-key="hero_newsletter_image" src="Assets/Davids%20Photos/action%203.jpg" alt="David Maus Jr. training with a group" style="object-position: center center;"></div>
     <div class="hero-content">
-      <h1>The Good Stuff</h1>
-      <p class="subtitle">Live Life like it Matters, because it does.</p>
+      <h1 data-content-key="hero_newsletter_headline">The Good Stuff</h1>
+      <p class="subtitle" data-content-key="hero_newsletter_subtitle">Live Life like it Matters, because it does.</p>
     </div>
   </section>
 
@@ -74,7 +74,7 @@
              Beehiiv Dashboard → Grow → Subscribe Forms → Embed
              The src will look like: https://embeds.beehiiv.com/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx -->
         <iframe
-          src="https://embeds.beehiiv.com/placeholder"
+          data-content-key="newsletter_embed_src" src="https://embeds.beehiiv.com/placeholder"
           data-test-id="beehiiv-embed"
           width="100%"
           height="320"
@@ -129,10 +129,10 @@
           <a href="contact.html">Contact</a>
         </nav>
         <div class="footer-social">
-          <a href="#" aria-label="Instagram">IG</a>
-          <a href="#" aria-label="YouTube">YT</a>
-          <a href="#" aria-label="TikTok">TT</a>
-          <a href="#" aria-label="Twitter">X</a>
+          <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+          <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+          <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+          <a href="#" data-social="twitter" aria-label="Twitter">X</a>
         </div>
       </div>
       <div class="footer-bottom">
@@ -141,6 +141,7 @@
     </div>
   </footer>
 
+  <script src="js/content-loader.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

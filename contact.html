@@ -46,19 +46,19 @@
     </nav>
     <div class="drawer-footer">
       <div class="drawer-social">
-        <a href="#" aria-label="Instagram">IG</a>
-        <a href="#" aria-label="YouTube">YT</a>
-        <a href="#" aria-label="TikTok">TT</a>
-        <a href="#" aria-label="Twitter">X</a>
+        <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+        <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+        <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+        <a href="#" data-social="twitter" aria-label="Twitter">X</a>
       </div>
     </div>
   </div>
 
   <!-- Hero -->
   <section class="hero hero-page">
-    <div class="hero-bg"><img src="Assets/Davids%20Photos/headshot%20hero%20pic.jpg" alt="David Maus Jr." style="object-position: 38% 15%;"></div>
+    <div class="hero-bg"><img data-content-key="hero_contact_image" src="Assets/Davids%20Photos/headshot%20hero%20pic.jpg" alt="David Maus Jr." style="object-position: 38% 15%;"></div>
     <div class="hero-content">
-      <h1>Contact</h1>
+      <h1 data-content-key="hero_contact_headline">Contact</h1>
     </div>
   </section>
 
@@ -99,7 +99,7 @@
             <div class="icon-placeholder">@</div>
             <div>
               <strong>Email</strong>
-              <span>placeholder@email.com</span>
+              <span data-content-key="contact_email">placeholder@email.com</span>
             </div>
           </div>
 
@@ -107,7 +107,7 @@
             <div class="icon-placeholder">Ph</div>
             <div>
               <strong>Phone</strong>
-              <span>(000) 000-0000</span>
+              <span data-content-key="contact_phone">(000) 000-0000</span>
             </div>
           </div>
 
@@ -115,7 +115,7 @@
             <div class="icon-placeholder">Loc</div>
             <div>
               <strong>Location</strong>
-              <span>City, State</span>
+              <span data-content-key="contact_location">City, State</span>
             </div>
           </div>
 
@@ -146,10 +146,10 @@
           <a href="contact.html">Contact</a>
         </nav>
         <div class="footer-social">
-          <a href="#" aria-label="Instagram">IG</a>
-          <a href="#" aria-label="YouTube">YT</a>
-          <a href="#" aria-label="TikTok">TT</a>
-          <a href="#" aria-label="Twitter">X</a>
+          <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+          <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+          <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+          <a href="#" data-social="twitter" aria-label="Twitter">X</a>
         </div>
       </div>
       <div class="footer-bottom">
@@ -158,6 +158,7 @@
     </div>
   </footer>
 
+  <script src="js/content-loader.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

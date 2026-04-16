@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Admin · David Maus Jr.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div id="login-screen" class="login-screen" hidden>
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ">
+      </div>
+      <h1>Admin Login</h1>
+      <p class="login-sub">Sign in to manage your site</p>
+      <form id="login-form">
+        <div class="field">
+          <label for="login-username">Username</label>
+          <input type="text" id="login-username" required autocomplete="username">
+        </div>
+        <div class="field">
+          <label for="login-password">Password</label>
+          <input type="password" id="login-password" required autocomplete="current-password">
+        </div>
+        <div class="login-error" id="login-error" hidden></div>
+        <button type="submit" class="btn btn-yellow btn-block">Sign In</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="dashboard" hidden>
+    <header class="admin-header">
+      <div class="admin-brand">
+        <img src="Assets/Logos%20and%20Branding/Logo.png" alt="DMJ" class="admin-logo">
+        <span>Admin</span>
+      </div>
+      <nav class="admin-tabs">
+        <button class="admin-tab active" data-tab="links">Links</button>
+        <button class="admin-tab" data-tab="info">Edit Info</button>
+        <button class="admin-tab" data-tab="media">Media</button>
+      </nav>
+      <div class="admin-user">
+        <span id="user-label">davidmausjr</span>
+        <button class="btn-link" id="change-password-btn">Change Password</button>
+        <button class="btn-link" id="logout-btn">Log Out</button>
+      </div>
+    </header>
+
+    <main class="admin-main">
+
+      <!-- Tab 1: Links (Products) -->
+      <section class="tab-panel active" id="tab-links">
+        <div class="panel-header">
+          <div>
+            <h2>Product Links</h2>
+            <p class="panel-sub">Manage all product partnerships shown on the Product Picks page.</p>
+          </div>
+          <button class="btn btn-yellow" id="add-link-btn">+ Add Link</button>
+        </div>
+        <div class="filter-bar">
+          <select id="category-filter">
+            <option value="">All Categories</option>
+            <option value="diy-kits">DIY Kits</option>
+            <option value="cold-plunge">Cold Plunge</option>
+            <option value="saunas">Saunas</option>
+            <option value="performance">Performance</option>
+            <option value="health">Health Optimization</option>
+            <option value="gear">Gear &amp; Wearables</option>
+            <option value="supps">Supps &amp; Snacks</option>
+            <option value="pets">Pets</option>
+          </select>
+          <input type="search" id="search-filter" placeholder="Search by name…">
+          <span class="result-count" id="link-count"></span>
+        </div>
+        <div class="links-table-wrap">
+          <table class="links-table">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Category</th>
+                <th>Code</th>
+                <th>Link</th>
+                <th>Active</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="links-tbody">
+              <tr><td colspan="6" class="loading">Loading…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Tab 2: Edit Info -->
+      <section class="tab-panel" id="tab-info" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Edit Page Content</h2>
+            <p class="panel-sub">Update text, images, and info that appears across the site.</p>
+          </div>
+        </div>
+        <div class="info-sections" id="info-sections">
+          <div class="loading">Loading…</div>
+        </div>
+      </section>
+
+      <!-- Tab 3: Media -->
+      <section class="tab-panel" id="tab-media" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Media Library</h2>
+            <p class="panel-sub">Upload photos to use anywhere on the site.</p>
+          </div>
+          <div>
+            <input type="file" id="media-file-input" accept="image/*" multiple hidden>
+            <button class="btn btn-yellow" id="upload-media-btn">+ Upload Photos</button>
+          </div>
+        </div>
+        <div class="media-grid" id="media-grid">
+          <div class="loading">Loading…</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Modal container -->
+  <div class="modal-backdrop" id="modal-backdrop" hidden>
+    <div class="modal" id="modal">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

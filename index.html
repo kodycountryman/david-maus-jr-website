@@ -47,20 +47,20 @@
     </nav>
     <div class="drawer-footer">
       <div class="drawer-social">
-        <a href="#" aria-label="Instagram">IG</a>
-        <a href="#" aria-label="YouTube">YT</a>
-        <a href="#" aria-label="TikTok">TT</a>
-        <a href="#" aria-label="Twitter">X</a>
+        <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+        <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+        <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+        <a href="#" data-social="twitter" aria-label="Twitter">X</a>
       </div>
     </div>
   </div>
 
   <!-- Hero -->
   <section class="hero">
-    <div class="hero-bg"><img src="Assets/Davids%20Photos/hyrox%201.jpg" alt="David Maus Jr. crossing the finish line" style="object-position: center 35%;"></div>
+    <div class="hero-bg"><img data-content-key="hero_index_image" src="Assets/Davids%20Photos/hyrox%201.jpg" alt="David Maus Jr. crossing the finish line" style="object-position: center 35%;"></div>
     <div class="hero-content">
-      <h1>Health. Wellness. Lifestyle.</h1>
-      <p class="subtitle">Faith. Family. Fitness.</p>
+      <h1 data-content-key="hero_index_headline">Health. Wellness. Lifestyle.</h1>
+      <p class="subtitle" data-content-key="hero_index_subtitle">Faith. Family. Fitness.</p>
     </div>
   </section>
 
@@ -78,11 +78,11 @@
   <section class="section">
     <div class="container">
       <div class="about-preview">
-        <div class="placeholder-img reveal-left"><img src="Assets/Davids%20Photos/brand-deals.jpg" alt="David Maus Jr." style="object-position: center center;"></div>
+        <div class="placeholder-img reveal-left"><img data-content-key="meet_david_image" src="Assets/Davids%20Photos/brand-deals.jpg" alt="David Maus Jr." style="object-position: center center;"></div>
         <div class="about-preview-text reveal-right">
-          <h2>Meet David</h2>
-          <p class="intro-text">He left a 20-year career as an automotive VP to answer a calling he couldn't ignore. What followed changed everything.</p>
-          <p>David Maus Jr. walked away from overseeing 400+ employees to pursue something that made no sense on paper and everything sense in his soul. A low-budget cold plunge video, a surrendered heart, and a commitment to showing up every day turned into one of the most authentic health and wellness channels on YouTube. Over a million dollars in products sold monthly. But more importantly, lives being changed. His message is simple: your health, your faith, and your purpose are worth fighting for.</p>
+          <h2 data-content-key="meet_david_title">Meet David</h2>
+          <p class="intro-text" data-content-key="meet_david_intro">He left a 20-year career as an automotive VP to answer a calling he couldn't ignore. What followed changed everything.</p>
+          <p data-content-key="meet_david_body">David Maus Jr. walked away from overseeing 400+ employees to pursue something that made no sense on paper and everything sense in his soul. A low-budget cold plunge video, a surrendered heart, and a commitment to showing up every day turned into one of the most authentic health and wellness channels on YouTube. Over a million dollars in products sold monthly. But more importantly, lives being changed. His message is simple: your health, your faith, and your purpose are worth fighting for.</p>
           <a href="about.html" class="btn btn-dark">Learn More</a>
         </div>
       </div>
@@ -175,10 +175,10 @@
           <a href="contact.html">Contact</a>
         </nav>
         <div class="footer-social">
-          <a href="#" aria-label="Instagram">IG</a>
-          <a href="#" aria-label="YouTube">YT</a>
-          <a href="#" aria-label="TikTok">TT</a>
-          <a href="#" aria-label="Twitter">X</a>
+          <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+          <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+          <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+          <a href="#" data-social="twitter" aria-label="Twitter">X</a>
         </div>
       </div>
       <div class="footer-bottom">
@@ -187,6 +187,7 @@
     </div>
   </footer>
 
+  <script src="js/content-loader.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

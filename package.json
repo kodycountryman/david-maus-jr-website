@@ -1,0 +1,13 @@
+{
+  "name": "david-maus-jr",
+  "version": "1.0.0",
+  "private": true,
+  "description": "David Maus Jr. health, wellness & lifestyle site with admin dashboard on Cloudflare Pages",
+  "scripts": {
+    "dev": "wrangler pages dev . --compatibility-date=2026-04-16 --port 8788",
+    "deploy": "wrangler pages deploy ."
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}

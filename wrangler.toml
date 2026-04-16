@@ -1,0 +1,20 @@
+name = "david-maus-jr"
+compatibility_date = "2026-04-16"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "."
+
+# D1 binding — exposed as env.DB in Functions
+[[d1_databases]]
+binding = "DB"
+database_name = "dmj-content"
+database_id = "2ebc7e22-7b75-4d65-a5fd-5eb47b469398"
+
+# R2 binding — exposed as env.MEDIA in Functions
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "dmj-media"
+
+# Env vars for local dev (production values set via Cloudflare dashboard)
+[vars]
+JWT_SECRET = "bSL7MF5NG+oLlajlIgZNRChKsVpWUuEedbtzg30hkGwtobOpK0TSDX6yI9jE93hL"
+PUBLIC_MEDIA_URL = "https://pub-placeholder.r2.dev"

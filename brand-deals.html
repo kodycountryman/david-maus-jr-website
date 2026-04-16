@@ -46,27 +46,27 @@
     </nav>
     <div class="drawer-footer">
       <div class="drawer-social">
-        <a href="#" aria-label="Instagram">IG</a>
-        <a href="#" aria-label="YouTube">YT</a>
-        <a href="#" aria-label="TikTok">TT</a>
-        <a href="#" aria-label="Twitter">X</a>
+        <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+        <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+        <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+        <a href="#" data-social="twitter" aria-label="Twitter">X</a>
       </div>
     </div>
   </div>
 
   <!-- Hero -->
   <section class="hero hero-page">
-    <div class="hero-bg"><img src="Assets/Davids%20Photos/brand-deals.jpg" alt="David Maus Jr." class="hero-img-brand" style="object-position: center 15%;"></div>
+    <div class="hero-bg"><img data-content-key="hero_brand_image" src="Assets/Davids%20Photos/brand-deals.jpg" alt="David Maus Jr." class="hero-img-brand" style="object-position: center 15%;"></div>
     <div class="hero-content">
-      <h1>Brand Partnerships</h1>
+      <h1 data-content-key="hero_brand_headline">Brand Partnerships</h1>
     </div>
   </section>
 
   <!-- Intro -->
   <section class="section">
     <div class="container" style="max-width:800px;">
-      <p class="intro-text reveal-up" style="text-align:center; font-size:1.15rem; margin-bottom:16px;">Authentic collaborations that align with a mission of health, wellness, and performance.</p>
-      <p class="reveal-up" style="text-align:center; color:var(--dark-gray);">David partners with brands that share his commitment to quality and impact. Whether it's a product integration, campaign, or long-term ambassadorship, every collaboration is rooted in genuine belief and real results.</p>
+      <p class="intro-text reveal-up" data-content-key="brand_intro_primary" style="text-align:center; font-size:1.15rem; margin-bottom:16px;">Authentic collaborations that align with a mission of health, wellness, and performance.</p>
+      <p class="reveal-up" data-content-key="brand_intro_secondary" style="text-align:center; color:var(--dark-gray);">David partners with brands that share his commitment to quality and impact. Whether it's a product integration, campaign, or long-term ambassadorship, every collaboration is rooted in genuine belief and real results.</p>
     </div>
   </section>
 
@@ -76,20 +76,20 @@
       <h2 class="reveal-up" style="text-align:center; font-size:1.8rem; margin-bottom:40px;">By The Numbers</h2>
       <div class="stats-row reveal-stagger">
         <div class="stat-card">
-          <span class="stat-number">000K+</span>
-          <span class="stat-label">Followers</span>
+          <span class="stat-number" data-content-key="stat_1_num">000K+</span>
+          <span class="stat-label" data-content-key="stat_1_label">Followers</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">0.0%</span>
-          <span class="stat-label">Engagement Rate</span>
+          <span class="stat-number" data-content-key="stat_2_num">0.0%</span>
+          <span class="stat-label" data-content-key="stat_2_label">Engagement Rate</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">00-00</span>
-          <span class="stat-label">Core Age Demo</span>
+          <span class="stat-number" data-content-key="stat_3_num">00-00</span>
+          <span class="stat-label" data-content-key="stat_3_label">Core Age Demo</span>
         </div>
         <div class="stat-card">
-          <span class="stat-number">000K+</span>
-          <span class="stat-label">Monthly Impressions</span>
+          <span class="stat-number" data-content-key="stat_4_num">000K+</span>
+          <span class="stat-label" data-content-key="stat_4_label">Monthly Impressions</span>
         </div>
       </div>
     </div>
@@ -155,10 +155,10 @@
           <a href="contact.html">Contact</a>
         </nav>
         <div class="footer-social">
-          <a href="#" aria-label="Instagram">IG</a>
-          <a href="#" aria-label="YouTube">YT</a>
-          <a href="#" aria-label="TikTok">TT</a>
-          <a href="#" aria-label="Twitter">X</a>
+          <a href="#" data-social="instagram" aria-label="Instagram">IG</a>
+          <a href="#" data-social="youtube" aria-label="YouTube">YT</a>
+          <a href="#" data-social="tiktok" aria-label="TikTok">TT</a>
+          <a href="#" data-social="twitter" aria-label="Twitter">X</a>
         </div>
       </div>
       <div class="footer-bottom">
@@ -167,6 +167,7 @@
     </div>
   </footer>
 
+  <script src="js/content-loader.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

@@ -71,32 +71,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const productCount = document.getElementById('product-count');
 
   if (tabBtns.length && picksGrid) {
-    const allCards = [...picksGrid.querySelectorAll('.product-card[data-category]')];
-    const allHeaders = [...picksGrid.querySelectorAll('.category-header')];
-    const totalCount = allCards.length;
+    // Re-query cards each call so dynamically-loaded products work
+    const getCards = () => [...picksGrid.querySelectorAll('.product-card[data-category]')];
+    const getHeaders = () => [...picksGrid.querySelectorAll('.category-header')];
 
-    const updateCount = (visible) => {
+    const getActiveTab = () =>
+      document.querySelector('.tab-btn.active')?.dataset.tab || 'all';
+
+    const updateCount = () => {
       if (!productCount) return;
-      productCount.textContent = visible === totalCount
-        ? `Showing all ${totalCount} products`
-        : `Showing ${visible} of ${totalCount} products`;
+      const total = getCards().length;
+      const tab = getActiveTab();
+      const visible = tab === 'all'
+        ? total
+        : getCards().filter(c => c.dataset.category === tab).length;
+      productCount.textContent = visible === total
+        ? `Showing all ${total} products`
+        : `Showing ${visible} of ${total} products`;
+    };
+
+    const applyFilter = (tab) => {
+      getCards().forEach(card => {
+        card.style.display = (tab === 'all' || card.dataset.category === tab) ? '' : 'none';
+      });
+      getHeaders().forEach(h => {
+        h.style.display = tab === 'all' ? '' : 'none';
+      });
+      updateCount();
     };
 
     const filterProducts = (tab) => {
-      // Fade grid out
       picksGrid.classList.add('fading');
       setTimeout(() => {
-        let visibleCount = 0;
-        allCards.forEach(card => {
-          const match = tab === 'all' || card.dataset.category === tab;
-          card.style.display = match ? '' : 'none';
-          if (match) visibleCount++;
-        });
-        // Show headers only in "all" view
-        allHeaders.forEach(h => {
-          h.style.display = tab === 'all' ? '' : 'none';
-        });
-        updateCount(visibleCount);
+        applyFilter(tab);
         picksGrid.classList.remove('fading');
       }, 150);
     };
@@ -106,12 +113,17 @@ document.addEventListener('DOMContentLoaded', () => {
         tabBtns.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         filterProducts(btn.dataset.tab);
-        // Scroll tabs to keep active button visible
         btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       });
     });
 
-    updateCount(totalCount);
+    // Initial state (handles case when HTML already has products)
+    updateCount();
+
+    // Re-apply after dynamic load
+    document.addEventListener('products-loaded', () => {
+      applyFilter(getActiveTab());
+    });
   }
 
   // ---- Beehiiv Newsletter Posts ----
