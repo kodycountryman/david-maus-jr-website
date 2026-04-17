@@ -145,6 +145,7 @@
       });
     });
     $('#refresh-analytics')?.addEventListener('click', () => refreshAll());
+    $('#export-analytics')?.addEventListener('click', openExportModal);
 
     const search = $('#products-search');
     search?.addEventListener('input', () => filterProducts(search.value));
@@ -604,5 +605,128 @@
     return String(s ?? '').replace(/[&<>"']/g, (c) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[c]));
+  }
+
+  // =========================================================================
+  // CSV Export Modal
+  // =========================================================================
+  const EXPORT_SECTIONS = [
+    { key: 'overview',   label: 'Overview',              desc: 'Pageviews, unique visitors, clicks, CTR, conversion, new/returning' },
+    { key: 'timeseries', label: 'Pageviews over time',   desc: 'Time-bucketed pageviews + product clicks for the selected range' },
+    { key: 'sources',    label: 'Traffic sources',       desc: 'Which networks are sending traffic (YouTube, Instagram, etc.)' },
+    { key: 'pages',      label: 'Top pages',             desc: 'Most-viewed pages with unique visitor counts' },
+    { key: 'countries',  label: 'Top countries',         desc: 'Where visitors are located' },
+    { key: 'devices',    label: 'Device breakdown',      desc: 'Mobile / desktop / tablet' },
+    { key: 'products',   label: 'Product clicks',        desc: 'Every product with period + all-time clicks + top referring source' },
+    { key: 'referrers',  label: 'Top referring URLs',    desc: 'Specific videos / posts / newsletter issues driving traffic' },
+    { key: 'heatmap',    label: 'Peak activity heatmap', desc: '7×24 grid of pageviews by day-of-week + hour' },
+  ];
+
+  // Remember last selection across opens
+  let lastSelected = null;
+
+  function openExportModal() {
+    const backdrop = document.getElementById('modal-backdrop');
+    const modal = document.getElementById('modal');
+    if (!backdrop || !modal) return;
+
+    const selected = lastSelected || new Set(EXPORT_SECTIONS.map(s => s.key));
+
+    modal.innerHTML = `
+      <div class="modal-header">
+        <h3>Export Analytics (CSV)</h3>
+        <button class="modal-close" data-close>&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="color:var(--muted); font-size:13px; margin-bottom:16px;">
+          Pick which sections to include. You can open the CSV in Excel, Google Sheets, or send it straight to a brand.
+        </p>
+        <div class="export-range-pill">
+          <span class="export-range-label">Range:</span>
+          <strong>${state.range.charAt(0).toUpperCase() + state.range.slice(1)}</strong>
+          <span style="color:var(--muted); font-size:12px;">(change above to modify)</span>
+        </div>
+        <div class="export-presets">
+          <button type="button" class="preset-btn" data-preset="all">Select all</button>
+          <button type="button" class="preset-btn" data-preset="none">Clear</button>
+          <button type="button" class="preset-btn" data-preset="brand">For brand pitch</button>
+        </div>
+        <ul class="export-checklist">
+          ${EXPORT_SECTIONS.map(s => `
+            <li>
+              <label class="export-check">
+                <input type="checkbox" value="${s.key}" ${selected.has(s.key) ? 'checked' : ''}>
+                <span class="export-check-body">
+                  <span class="export-check-label">${escapeHtml(s.label)}</span>
+                  <span class="export-check-desc">${escapeHtml(s.desc)}</span>
+                </span>
+              </label>
+            </li>
+          `).join('')}
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <span class="export-count" id="export-count"></span>
+        <div style="flex:1;"></div>
+        <button class="btn btn-ghost" data-close>Cancel</button>
+        <button class="btn btn-yellow" id="do-export">Download CSV</button>
+      </div>
+    `;
+    backdrop.hidden = false;
+
+    const checks = modal.querySelectorAll('input[type="checkbox"]');
+    const countEl = modal.querySelector('#export-count');
+    const updateCount = () => {
+      const n = [...checks].filter(c => c.checked).length;
+      countEl.textContent = n ? `${n} section${n === 1 ? '' : 's'} selected` : 'Pick at least one section';
+      modal.querySelector('#do-export').disabled = n === 0;
+    };
+    checks.forEach(c => c.addEventListener('change', updateCount));
+    updateCount();
+
+    // Presets
+    modal.querySelectorAll('[data-preset]').forEach(b => {
+      b.addEventListener('click', () => {
+        const p = b.dataset.preset;
+        if (p === 'all') {
+          checks.forEach(c => c.checked = true);
+        } else if (p === 'none') {
+          checks.forEach(c => c.checked = false);
+        } else if (p === 'brand') {
+          // Brand pitch: high-signal summary (no raw timeseries / heatmap)
+          const brandSet = new Set(['overview', 'sources', 'pages', 'countries', 'devices', 'products', 'referrers']);
+          checks.forEach(c => c.checked = brandSet.has(c.value));
+        }
+        updateCount();
+      });
+    });
+
+    // Close buttons
+    modal.querySelectorAll('[data-close]').forEach(b => {
+      b.addEventListener('click', () => { backdrop.hidden = true; modal.innerHTML = ''; });
+    });
+    backdrop.addEventListener('click', function onBg(e) {
+      if (e.target === backdrop) {
+        backdrop.hidden = true;
+        modal.innerHTML = '';
+        backdrop.removeEventListener('click', onBg);
+      }
+    });
+
+    // Export action
+    modal.querySelector('#do-export').addEventListener('click', () => {
+      const include = [...checks].filter(c => c.checked).map(c => c.value);
+      if (!include.length) return;
+      lastSelected = new Set(include);
+      const url = `/api/analytics/export?range=${encodeURIComponent(state.range)}&include=${encodeURIComponent(include.join(','))}`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      backdrop.hidden = true;
+      modal.innerHTML = '';
+    });
   }
 })();

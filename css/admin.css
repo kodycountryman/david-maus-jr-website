@@ -1378,3 +1378,127 @@ input, textarea, select {
   .products-table th:nth-child(3),
   .products-table td:nth-child(3) { display: none; }
 }
+
+/* Export button + modal */
+.btn-export {
+  padding: 8px 16px;
+  font-size: 12px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+}
+
+.export-icon { font-size: 14px; line-height: 1; }
+
+.export-range-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f5f5f2;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.export-range-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.export-presets {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.preset-btn {
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: #f0f0f0;
+  color: var(--dark-gray);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.preset-btn:hover { background: var(--near-black); color: var(--yellow); }
+
+.export-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.export-check {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.export-check:hover {
+  border-color: var(--near-black);
+  background: #fafaf8;
+}
+
+.export-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--near-black);
+  cursor: pointer;
+}
+
+.export-check:has(input:checked) {
+  border-color: var(--yellow);
+  background: #fffdf2;
+}
+
+.export-check-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.export-check-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--near-black);
+}
+
+.export-check-desc {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.export-count {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.modal-footer .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}

@@ -775,6 +775,277 @@ async function handleAnalyticsReferrers(request, env) {
   return json({ referrers: results || [] });
 }
 
+// ===========================================================================
+// CSV Export
+// ===========================================================================
+
+const csvEscape = (v) => {
+  if (v == null) return '';
+  const s = String(v);
+  if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+  return s;
+};
+
+const csvRow = (arr) => arr.map(csvEscape).join(',');
+
+const SOURCE_LABEL_MAP = {
+  youtube: 'YouTube', instagram: 'Instagram', tiktok: 'TikTok',
+  twitter: 'Twitter / X', facebook: 'Facebook', beehiiv: 'Newsletter',
+  google: 'Google', bing: 'Bing', duckduckgo: 'DuckDuckGo',
+  reddit: 'Reddit', linkedin: 'LinkedIn', pinterest: 'Pinterest',
+  direct: 'Direct', other: 'Other',
+};
+
+const PAGE_LABEL_MAP = {
+  '/': 'Home', '/index.html': 'Home',
+  '/about.html': 'About', '/brand-deals.html': 'Brand Partnerships',
+  '/product-picks.html': 'Product Picks', '/newsletter.html': 'Newsletter',
+  '/contact.html': 'Contact',
+};
+
+const CAT_LABEL_MAP = {
+  'diy-kits': 'DIY Kits', 'cold-plunge': 'Cold Plunge', 'saunas': 'Saunas',
+  'performance': 'Performance', 'health': 'Health Optimization',
+  'gear': 'Gear & Wearables', 'supps': 'Supps & Snacks', 'pets': 'Pets'
+};
+
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+async function handleAnalyticsExport(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const include = (url.searchParams.get('include') || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (!include.length) return json({ error: 'No sections selected' }, 400);
+  const { since } = rangeToSql(range);
+
+  const lines = [];
+  lines.push(csvRow(['DMJ Site Analytics Export']));
+  lines.push(csvRow(['Range', range]));
+  lines.push(csvRow(['Generated', new Date().toISOString()]));
+  lines.push(csvRow(['Sections', include.join(', ')]));
+  lines.push('');
+
+  // --- Overview ---
+  if (include.includes('overview')) {
+    const prev = rangeToPrevSql(range);
+    const [pv, uv, pvPrev, clicks, clicksPrev, active, conv, nr] = await Promise.all([
+      env.DB.prepare(`SELECT COUNT(*) c FROM pageviews WHERE device != 'bot' AND created_at >= ${since}`).first(),
+      env.DB.prepare(`SELECT COUNT(DISTINCT session_id) c FROM pageviews WHERE device != 'bot' AND created_at >= ${since}`).first(),
+      env.DB.prepare(`SELECT COUNT(*) c FROM pageviews WHERE device != 'bot' AND created_at >= ${prev.since} AND created_at < ${prev.until}`).first(),
+      env.DB.prepare(`SELECT COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${since}`).first(),
+      env.DB.prepare(`SELECT COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${prev.since} AND created_at < ${prev.until}`).first(),
+      env.DB.prepare(`SELECT COUNT(DISTINCT session_id) c FROM pageviews WHERE device != 'bot' AND created_at > datetime('now','-5 minutes')`).first(),
+      env.DB.prepare(`
+        SELECT COUNT(DISTINCT pv.session_id) picks,
+               COUNT(DISTINCT CASE WHEN pc.session_id IS NOT NULL THEN pv.session_id END) conv
+        FROM pageviews pv
+        LEFT JOIN product_clicks pc ON pc.session_id = pv.session_id
+        WHERE pv.path = '/product-picks.html' AND pv.device != 'bot' AND pv.created_at >= ${since}
+      `).first(),
+      env.DB.prepare(`
+        WITH firsts AS (
+          SELECT visitor_id, MIN(created_at) fs FROM pageviews
+          WHERE visitor_id IS NOT NULL AND device != 'bot'
+            AND visitor_id IN (SELECT DISTINCT visitor_id FROM pageviews WHERE device != 'bot' AND created_at >= ${since} AND visitor_id IS NOT NULL)
+          GROUP BY visitor_id
+        )
+        SELECT SUM(CASE WHEN fs >= ${since} THEN 1 ELSE 0 END) new_v,
+               SUM(CASE WHEN fs < ${since} THEN 1 ELSE 0 END) ret_v
+        FROM firsts
+      `).first(),
+    ]);
+    const ctr = (pv?.c || 0) > 0 ? ((clicks?.c || 0) / pv.c * 100).toFixed(1) : '0.0';
+    const convRate = (conv?.picks || 0) > 0 ? ((conv.conv || 0) / conv.picks * 100).toFixed(1) : '0.0';
+    const delta = (c, p) => p ? (((c - p) / p) * 100).toFixed(0) + '%' : (c > 0 ? '+100%' : '0%');
+
+    lines.push(csvRow(['## OVERVIEW']));
+    lines.push(csvRow(['Metric', 'Value', 'Delta vs previous period']));
+    lines.push(csvRow(['Pageviews', pv?.c || 0, delta(pv?.c || 0, pvPrev?.c || 0)]));
+    lines.push(csvRow(['Unique Visitors', uv?.c || 0, '']));
+    lines.push(csvRow(['Product Clicks', clicks?.c || 0, delta(clicks?.c || 0, clicksPrev?.c || 0)]));
+    lines.push(csvRow(['Click-Through Rate', ctr + '%', '']));
+    lines.push(csvRow(['Active Now (last 5 min)', active?.c || 0, '']));
+    lines.push(csvRow(['New Visitors', nr?.new_v || 0, '']));
+    lines.push(csvRow(['Returning Visitors', nr?.ret_v || 0, '']));
+    lines.push(csvRow(['Product-Picks Visitors', conv?.picks || 0, '']));
+    lines.push(csvRow(['Product-Picks Conversions', conv?.conv || 0, '']));
+    lines.push(csvRow(['Product-Picks Conversion Rate', convRate + '%', '']));
+    lines.push('');
+  }
+
+  // --- Timeseries ---
+  if (include.includes('timeseries')) {
+    const { bucketFmt } = rangeToSql(range);
+    const [pvRes, clRes] = await Promise.all([
+      env.DB.prepare(`SELECT ${bucketFmt} bucket, COUNT(*) c FROM pageviews WHERE device != 'bot' AND created_at >= ${since} GROUP BY bucket ORDER BY bucket`).all(),
+      env.DB.prepare(`SELECT ${bucketFmt} bucket, COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${since} GROUP BY bucket ORDER BY bucket`).all(),
+    ]);
+    const pvMap = new Map((pvRes.results || []).map(r => [r.bucket, r.c]));
+    const clMap = new Map((clRes.results || []).map(r => [r.bucket, r.c]));
+    const allBuckets = [...new Set([...pvMap.keys(), ...clMap.keys()])].sort();
+    lines.push(csvRow(['## PAGEVIEWS OVER TIME']));
+    lines.push(csvRow(['Bucket', 'Pageviews', 'Product Clicks']));
+    for (const b of allBuckets) {
+      lines.push(csvRow([b, pvMap.get(b) || 0, clMap.get(b) || 0]));
+    }
+    lines.push('');
+  }
+
+  // --- Traffic Sources ---
+  if (include.includes('sources')) {
+    const { results } = await env.DB.prepare(`
+      SELECT referrer_source src, COUNT(*) views, COUNT(DISTINCT session_id) uniq
+      FROM pageviews WHERE device != 'bot' AND created_at >= ${since}
+      GROUP BY referrer_source ORDER BY views DESC
+    `).all();
+    const total = (results || []).reduce((a, b) => a + b.views, 0);
+    lines.push(csvRow(['## TRAFFIC SOURCES']));
+    lines.push(csvRow(['Source', 'Views', 'Unique Visitors', 'Percent']));
+    for (const r of results || []) {
+      const pct = total ? ((r.views / total) * 100).toFixed(1) + '%' : '0%';
+      lines.push(csvRow([SOURCE_LABEL_MAP[r.src] || r.src, r.views, r.uniq, pct]));
+    }
+    lines.push('');
+  }
+
+  // --- Top Pages ---
+  if (include.includes('pages')) {
+    const { results } = await env.DB.prepare(`
+      SELECT path, COUNT(*) views, COUNT(DISTINCT session_id) uniq
+      FROM pageviews WHERE device != 'bot' AND created_at >= ${since}
+      GROUP BY path ORDER BY views DESC LIMIT 50
+    `).all();
+    lines.push(csvRow(['## TOP PAGES']));
+    lines.push(csvRow(['Page', 'Path', 'Views', 'Unique Visitors']));
+    for (const r of results || []) {
+      lines.push(csvRow([PAGE_LABEL_MAP[r.path] || r.path, r.path, r.views, r.uniq]));
+    }
+    lines.push('');
+  }
+
+  // --- Countries ---
+  if (include.includes('countries')) {
+    const { results } = await env.DB.prepare(`
+      SELECT COALESCE(country, 'Unknown') country, COUNT(*) views
+      FROM pageviews WHERE device != 'bot' AND created_at >= ${since}
+      GROUP BY country ORDER BY views DESC LIMIT 50
+    `).all();
+    const total = (results || []).reduce((a, b) => a + b.views, 0);
+    lines.push(csvRow(['## TOP COUNTRIES']));
+    lines.push(csvRow(['Country Code', 'Views', 'Percent']));
+    for (const r of results || []) {
+      const pct = total ? ((r.views / total) * 100).toFixed(1) + '%' : '0%';
+      lines.push(csvRow([r.country, r.views, pct]));
+    }
+    lines.push('');
+  }
+
+  // --- Devices ---
+  if (include.includes('devices')) {
+    const { results } = await env.DB.prepare(`
+      SELECT device, COUNT(*) views FROM pageviews
+      WHERE device != 'bot' AND created_at >= ${since}
+      GROUP BY device
+    `).all();
+    const total = (results || []).reduce((a, b) => a + b.views, 0);
+    lines.push(csvRow(['## DEVICE BREAKDOWN']));
+    lines.push(csvRow(['Device', 'Views', 'Percent']));
+    for (const r of results || []) {
+      const pct = total ? ((r.views / total) * 100).toFixed(1) + '%' : '0%';
+      lines.push(csvRow([r.device, r.views, pct]));
+    }
+    lines.push('');
+  }
+
+  // --- Products ---
+  if (include.includes('products')) {
+    const { results } = await env.DB.prepare(`
+      SELECT p.id, p.title, p.category, p.code,
+             COALESCE(period.c, 0) period_clicks,
+             COALESCE(total.c, 0) all_time_clicks,
+             top_src.src top_source
+      FROM products p
+      LEFT JOIN (SELECT product_id, COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${since} GROUP BY product_id) period ON period.product_id = p.id
+      LEFT JOIN (SELECT product_id, COUNT(*) c FROM product_clicks WHERE device != 'bot' GROUP BY product_id) total ON total.product_id = p.id
+      LEFT JOIN (
+        SELECT product_id, referrer_source src FROM (
+          SELECT product_id, referrer_source, COUNT(*) c,
+            ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY COUNT(*) DESC) rn
+          FROM product_clicks WHERE device != 'bot' AND created_at >= ${since}
+          GROUP BY product_id, referrer_source
+        ) WHERE rn = 1
+      ) top_src ON top_src.product_id = p.id
+      ORDER BY period_clicks DESC, all_time_clicks DESC
+    `).all();
+    lines.push(csvRow(['## PRODUCT CLICKS']));
+    lines.push(csvRow(['Title', 'Category', 'Discount Code', 'Clicks (period)', 'Clicks (all time)', 'Top Source']));
+    for (const r of results || []) {
+      lines.push(csvRow([
+        r.title,
+        CAT_LABEL_MAP[r.category] || r.category,
+        r.code || '',
+        r.period_clicks,
+        r.all_time_clicks,
+        r.top_source ? (SOURCE_LABEL_MAP[r.top_source] || r.top_source) : '',
+      ]));
+    }
+    lines.push('');
+  }
+
+  // --- Referrers ---
+  if (include.includes('referrers')) {
+    const { results } = await env.DB.prepare(`
+      SELECT referrer_full url, referrer_source source,
+             COUNT(*) views, COUNT(DISTINCT session_id) uniq
+      FROM pageviews
+      WHERE device != 'bot' AND created_at >= ${since}
+        AND referrer_full IS NOT NULL AND referrer_full != ''
+        AND referrer_full NOT LIKE '%dmjr.countrymankody14.workers.dev%'
+        AND referrer_full NOT LIKE '%davidmausjr.com%'
+      GROUP BY referrer_full ORDER BY views DESC LIMIT 50
+    `).all();
+    lines.push(csvRow(['## TOP REFERRING URLs']));
+    lines.push(csvRow(['Source', 'URL', 'Views', 'Unique Visitors']));
+    for (const r of results || []) {
+      lines.push(csvRow([
+        SOURCE_LABEL_MAP[r.source] || r.source,
+        r.url, r.views, r.uniq,
+      ]));
+    }
+    lines.push('');
+  }
+
+  // --- Heatmap ---
+  if (include.includes('heatmap')) {
+    const { results } = await env.DB.prepare(`
+      SELECT CAST(strftime('%w', created_at) AS INTEGER) dow,
+             CAST(strftime('%H', created_at) AS INTEGER) hour,
+             COUNT(*) views
+      FROM pageviews WHERE device != 'bot' AND created_at >= ${since}
+      GROUP BY dow, hour
+    `).all();
+    const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+    for (const r of results || []) grid[r.dow][r.hour] = r.views;
+    lines.push(csvRow(['## PEAK ACTIVITY BY DAY & HOUR (UTC)']));
+    const header = ['Day', ...Array.from({ length: 24 }, (_, h) => `${h}:00`)];
+    lines.push(csvRow(header));
+    for (let d = 0; d < 7; d++) {
+      lines.push(csvRow([DAY_NAMES[d], ...grid[d]]));
+    }
+    lines.push('');
+  }
+
+  const body = lines.join('\r\n');
+  const filename = `dmj-analytics-${range}-${new Date().toISOString().slice(0, 10)}.csv`;
+  return new Response(body, {
+    headers: {
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
 async function handleAnalyticsHeatmap(request, env) {
   const url = new URL(request.url);
   const range = url.searchParams.get('range') || 'month';
@@ -900,6 +1171,7 @@ export default {
         if (path === '/api/analytics/live')       return handleAnalyticsLive(request, env);
         if (path === '/api/analytics/referrers')  return handleAnalyticsReferrers(request, env);
         if (path === '/api/analytics/heatmap')    return handleAnalyticsHeatmap(request, env);
+        if (path === '/api/analytics/export')     return handleAnalyticsExport(request, env);
       }
 
       // /api/content/:key
