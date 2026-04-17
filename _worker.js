@@ -348,6 +348,381 @@ async function handleMediaServe(request, env, path) {
 }
 
 // ===========================================================================
+// Analytics: helpers
+// ===========================================================================
+
+// Classify a referrer URL + UTM params into a fixed set of source labels
+function parseSource(referrerRaw, utmSource) {
+  if (utmSource) {
+    const u = utmSource.toLowerCase().trim();
+    // Normalize common aliases
+    if (u === 'ig' || u === 'insta') return 'instagram';
+    if (u === 'yt') return 'youtube';
+    if (u === 'tt') return 'tiktok';
+    if (u === 'x' || u === 'twitter.com') return 'twitter';
+    if (u === 'fb' || u === 'meta') return 'facebook';
+    return u.replace(/[^a-z0-9_-]/g, '').slice(0, 32) || 'other';
+  }
+  if (!referrerRaw) return 'direct';
+  let host;
+  try { host = new URL(referrerRaw).hostname.toLowerCase(); }
+  catch { return 'other'; }
+  if (host.includes('youtube.com') || host.includes('youtu.be')) return 'youtube';
+  if (host.includes('instagram.com')) return 'instagram';
+  if (host.includes('tiktok.com')) return 'tiktok';
+  if (host.includes('twitter.com') || host === 'x.com' || host.endsWith('.x.com')) return 'twitter';
+  if (host.includes('facebook.com') || host.includes('fb.com')) return 'facebook';
+  if (host.includes('google.')) return 'google';
+  if (host.includes('bing.com')) return 'bing';
+  if (host.includes('duckduckgo.com')) return 'duckduckgo';
+  if (host.includes('beehiiv.com')) return 'beehiiv';
+  if (host.includes('reddit.com')) return 'reddit';
+  if (host.includes('linkedin.com')) return 'linkedin';
+  if (host.includes('pinterest.com')) return 'pinterest';
+  return 'other';
+}
+
+function parseDevice(ua) {
+  if (!ua) return 'desktop';
+  if (/bot|crawl|spider|slurp|curl|wget|python-requests|preview/i.test(ua)) return 'bot';
+  if (/iPad|Tablet|PlayBook|Kindle|Silk|Nexus 7|Nexus 10|SM-T/i.test(ua)) return 'tablet';
+  if (/Android.*Mobile|Mobile|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua)) return 'mobile';
+  if (/Android/i.test(ua)) return 'tablet';
+  return 'desktop';
+}
+
+// Maps range param → SQLite datetime filter + strftime bucket format
+// Returns { since, bucketFmt, bucketFill } where bucketFill is the JS fn that
+// generates expected bucket labels so empty buckets render as zero.
+function rangeToSql(range) {
+  switch (range) {
+    case 'day':
+      return {
+        since: "datetime('now','-24 hours')",
+        bucketFmt: "strftime('%Y-%m-%dT%H:00', created_at)",
+        buckets: 24,
+        bucketUnit: 'hour',
+      };
+    case 'week':
+      return {
+        since: "datetime('now','-7 days')",
+        bucketFmt: "strftime('%Y-%m-%d', created_at)",
+        buckets: 7,
+        bucketUnit: 'day',
+      };
+    case 'year':
+      return {
+        since: "datetime('now','-365 days')",
+        bucketFmt: "strftime('%Y-%m', created_at)",
+        buckets: 12,
+        bucketUnit: 'month',
+      };
+    case 'month':
+    default:
+      return {
+        since: "datetime('now','-30 days')",
+        bucketFmt: "strftime('%Y-%m-%d', created_at)",
+        buckets: 30,
+        bucketUnit: 'day',
+      };
+  }
+}
+
+// Previous period for delta comparison (uses same span, shifted back)
+function rangeToPrevSql(range) {
+  switch (range) {
+    case 'day':
+      return {
+        since: "datetime('now','-48 hours')",
+        until: "datetime('now','-24 hours')",
+      };
+    case 'week':
+      return {
+        since: "datetime('now','-14 days')",
+        until: "datetime('now','-7 days')",
+      };
+    case 'year':
+      return {
+        since: "datetime('now','-730 days')",
+        until: "datetime('now','-365 days')",
+      };
+    case 'month':
+    default:
+      return {
+        since: "datetime('now','-60 days')",
+        until: "datetime('now','-30 days')",
+      };
+  }
+}
+
+// Zero-fill a sparse series keyed by bucket label
+function fillBuckets(rows, range) {
+  const { buckets, bucketUnit } = rangeToSql(range);
+  const map = new Map();
+  for (const r of rows) map.set(r.bucket, r.count);
+  const out = [];
+  const now = new Date();
+  for (let i = buckets - 1; i >= 0; i--) {
+    const d = new Date(now);
+    let label;
+    if (bucketUnit === 'hour') {
+      d.setHours(d.getHours() - i, 0, 0, 0);
+      label = d.toISOString().slice(0, 13) + ':00';
+    } else if (bucketUnit === 'day') {
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      label = d.toISOString().slice(0, 10);
+    } else {
+      d.setMonth(d.getMonth() - i);
+      d.setDate(1);
+      d.setHours(0, 0, 0, 0);
+      label = d.toISOString().slice(0, 7);
+    }
+    out.push({ bucket: label, count: Number(map.get(label) || 0) });
+  }
+  return out;
+}
+
+// ===========================================================================
+// Analytics: public tracking POSTs (no auth, use ctx.waitUntil to not block)
+// ===========================================================================
+
+async function handleTrackPageview(request, env, ctx) {
+  let body;
+  try { body = await request.json(); } catch { return json({ ok: false }, 400); }
+  const { path, referrer, session_id } = body || {};
+  if (!path || !session_id) return json({ ok: false }, 400);
+  // Don't track admin
+  if (typeof path === 'string' && path.startsWith('/admin')) return json({ ok: true, skipped: 'admin' });
+
+  const ua = request.headers.get('User-Agent') || '';
+  const device = parseDevice(ua);
+  // Don't persist bots
+  if (device === 'bot') return json({ ok: true, skipped: 'bot' });
+
+  // Pull UTM if present in the tracked URL
+  let utmSource = null;
+  try {
+    const parsed = new URL(path, 'https://x.invalid');
+    utmSource = parsed.searchParams.get('utm_source');
+  } catch {}
+  const source = parseSource(referrer, utmSource);
+  const country = request.headers.get('CF-IPCountry') || null;
+  const cleanPath = typeof path === 'string'
+    ? path.split('?')[0].slice(0, 255)
+    : '/';
+  const refFull = typeof referrer === 'string' ? referrer.slice(0, 512) : null;
+  const sid = String(session_id).slice(0, 64);
+
+  const writePromise = env.DB
+    .prepare(`INSERT INTO pageviews (path, referrer_source, referrer_full, device, country, session_id) VALUES (?, ?, ?, ?, ?, ?)`)
+    .bind(cleanPath, source, refFull, device, country, sid)
+    .run()
+    .catch(() => {});
+
+  if (ctx && ctx.waitUntil) ctx.waitUntil(writePromise);
+  return json({ ok: true });
+}
+
+async function handleTrackClick(request, env, ctx) {
+  let body;
+  try { body = await request.json(); } catch { return json({ ok: false }, 400); }
+  const { product_id, referrer, session_id } = body || {};
+  const pid = parseInt(product_id, 10);
+  if (!pid || !session_id) return json({ ok: false }, 400);
+
+  const ua = request.headers.get('User-Agent') || '';
+  const device = parseDevice(ua);
+  if (device === 'bot') return json({ ok: true, skipped: 'bot' });
+
+  const source = parseSource(referrer, null);
+  const country = request.headers.get('CF-IPCountry') || null;
+  const sid = String(session_id).slice(0, 64);
+
+  const writePromise = env.DB
+    .prepare(`INSERT INTO product_clicks (product_id, referrer_source, device, country, session_id) VALUES (?, ?, ?, ?, ?)`)
+    .bind(pid, source, device, country, sid)
+    .run()
+    .catch(() => {});
+
+  if (ctx && ctx.waitUntil) ctx.waitUntil(writePromise);
+  return json({ ok: true });
+}
+
+// ===========================================================================
+// Analytics: authenticated reads
+// ===========================================================================
+
+async function handleAnalyticsOverview(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  const prev = rangeToPrevSql(range);
+
+  const [pv, uv, pvPrev, clicks, clicksPrev, active] = await Promise.all([
+    env.DB.prepare(`SELECT COUNT(*) c FROM pageviews WHERE device != 'bot' AND created_at >= ${since}`).first(),
+    env.DB.prepare(`SELECT COUNT(DISTINCT session_id) c FROM pageviews WHERE device != 'bot' AND created_at >= ${since}`).first(),
+    env.DB.prepare(`SELECT COUNT(*) c FROM pageviews WHERE device != 'bot' AND created_at >= ${prev.since} AND created_at < ${prev.until}`).first(),
+    env.DB.prepare(`SELECT COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${since}`).first(),
+    env.DB.prepare(`SELECT COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${prev.since} AND created_at < ${prev.until}`).first(),
+    env.DB.prepare(`SELECT COUNT(DISTINCT session_id) c FROM pageviews WHERE device != 'bot' AND created_at > datetime('now','-5 minutes')`).first(),
+  ]);
+
+  const pct = (curr, prev) => {
+    if (!prev) return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 100);
+  };
+
+  return json({
+    pageviews: pv?.c || 0,
+    uniqueVisitors: uv?.c || 0,
+    clicks: clicks?.c || 0,
+    activeNow: active?.c || 0,
+    deltaPageviewsPct: pct(pv?.c || 0, pvPrev?.c || 0),
+    deltaClicksPct: pct(clicks?.c || 0, clicksPrev?.c || 0),
+    ctr: (pv?.c || 0) > 0 ? Math.round(((clicks?.c || 0) / (pv?.c || 0)) * 1000) / 10 : 0,
+  });
+}
+
+async function handleAnalyticsTimeseries(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const metric = url.searchParams.get('metric') === 'clicks' ? 'clicks' : 'pageviews';
+  const { since, bucketFmt } = rangeToSql(range);
+
+  const table = metric === 'clicks' ? 'product_clicks' : 'pageviews';
+  const q = `
+    SELECT ${bucketFmt} AS bucket, COUNT(*) AS count
+    FROM ${table}
+    WHERE device != 'bot' AND created_at >= ${since}
+    GROUP BY bucket
+    ORDER BY bucket
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  return json({ series: fillBuckets(results || [], range), range, metric });
+}
+
+async function handleAnalyticsSources(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  const q = `
+    SELECT referrer_source AS source,
+           COUNT(*) AS views,
+           COUNT(DISTINCT session_id) AS uniqueVisitors
+    FROM pageviews
+    WHERE device != 'bot' AND created_at >= ${since}
+    GROUP BY referrer_source
+    ORDER BY views DESC
+    LIMIT 12
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  return json({ sources: results || [] });
+}
+
+async function handleAnalyticsPages(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  const q = `
+    SELECT path, COUNT(*) AS views, COUNT(DISTINCT session_id) AS uniqueVisitors
+    FROM pageviews
+    WHERE device != 'bot' AND created_at >= ${since}
+    GROUP BY path
+    ORDER BY views DESC
+    LIMIT 10
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  return json({ pages: results || [] });
+}
+
+async function handleAnalyticsProducts(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  const q = `
+    SELECT p.id AS product_id,
+           p.title AS title,
+           p.category AS category,
+           p.code AS code,
+           COALESCE(period.c, 0) AS clicks,
+           COALESCE(total.c, 0) AS allTimeClicks
+    FROM products p
+    LEFT JOIN (
+      SELECT product_id, COUNT(*) AS c
+      FROM product_clicks
+      WHERE device != 'bot' AND created_at >= ${since}
+      GROUP BY product_id
+    ) period ON period.product_id = p.id
+    LEFT JOIN (
+      SELECT product_id, COUNT(*) AS c
+      FROM product_clicks
+      WHERE device != 'bot'
+      GROUP BY product_id
+    ) total ON total.product_id = p.id
+    ORDER BY clicks DESC, allTimeClicks DESC
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  return json({ products: results || [] });
+}
+
+async function handleAnalyticsDevices(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  const q = `
+    SELECT device, COUNT(*) AS count
+    FROM pageviews
+    WHERE device != 'bot' AND created_at >= ${since}
+    GROUP BY device
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  const counts = { mobile: 0, desktop: 0, tablet: 0 };
+  for (const r of results || []) {
+    if (counts.hasOwnProperty(r.device)) counts[r.device] = r.count;
+  }
+  return json(counts);
+}
+
+async function handleAnalyticsCountries(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  const q = `
+    SELECT COALESCE(country, '??') AS country, COUNT(*) AS views
+    FROM pageviews
+    WHERE device != 'bot' AND created_at >= ${since}
+    GROUP BY country
+    ORDER BY views DESC
+    LIMIT 10
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  return json({ countries: results || [] });
+}
+
+// Data retention: purge rows older than 18 months. Called lazily from
+// overview endpoint at most once per day (guarded by a flag column in content).
+async function retentionCleanup(env, ctx) {
+  const row = await env.DB
+    .prepare(`SELECT value FROM content WHERE key = 'analytics_last_cleanup'`)
+    .first().catch(() => null);
+  const now = new Date().toISOString().slice(0, 10);
+  if (row && row.value === now) return;
+
+  const job = async () => {
+    await env.DB.prepare(`DELETE FROM pageviews WHERE created_at < datetime('now','-18 months')`).run().catch(() => {});
+    await env.DB.prepare(`DELETE FROM product_clicks WHERE created_at < datetime('now','-18 months')`).run().catch(() => {});
+    // Upsert the flag (content table uses `key` primary)
+    await env.DB.prepare(
+      `INSERT INTO content (key, value, kind, label, group_name)
+       VALUES ('analytics_last_cleanup', ?, 'text', 'Analytics Last Cleanup', 'system')
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
+    ).bind(now).run().catch(() => {});
+  };
+  if (ctx && ctx.waitUntil) ctx.waitUntil(job()); else await job();
+}
+
+// ===========================================================================
 // Router
 // ===========================================================================
 export default {
@@ -364,6 +739,30 @@ export default {
       if (path === '/api/content') return handleContent(request, env);
       if (path === '/api/products') return handleProducts(request, env);
       if (path === '/api/media') return handleMedia(request, env);
+
+      // Analytics: public tracking (POST only)
+      if (path === '/api/track/pageview' && request.method === 'POST') {
+        return handleTrackPageview(request, env, ctx);
+      }
+      if (path === '/api/track/click' && request.method === 'POST') {
+        return handleTrackClick(request, env, ctx);
+      }
+
+      // Analytics: authenticated reads
+      if (path.startsWith('/api/analytics/')) {
+        const user = await requireAuth(request, env);
+        if (!user) return json({ error: 'Unauthorized' }, 401);
+        if (path === '/api/analytics/overview') {
+          retentionCleanup(env, ctx);
+          return handleAnalyticsOverview(request, env);
+        }
+        if (path === '/api/analytics/timeseries') return handleAnalyticsTimeseries(request, env);
+        if (path === '/api/analytics/sources')    return handleAnalyticsSources(request, env);
+        if (path === '/api/analytics/pages')      return handleAnalyticsPages(request, env);
+        if (path === '/api/analytics/products')   return handleAnalyticsProducts(request, env);
+        if (path === '/api/analytics/devices')    return handleAnalyticsDevices(request, env);
+        if (path === '/api/analytics/countries')  return handleAnalyticsCountries(request, env);
+      }
 
       // /api/content/:key
       let m = path.match(/^\/api\/content\/(.+)$/);

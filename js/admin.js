@@ -179,6 +179,8 @@
       const { user } = await api('/api/me');
       state.user = user;
       $('#user-label').textContent = user.username;
+      // Mark this browser session as admin so tracker.js skips analytics beacons
+      try { sessionStorage.setItem('dmj_is_admin', '1'); } catch {}
       showDashboard();
     } catch {
       showLogin();
@@ -214,6 +216,7 @@
       state.user = user;
       $('#user-label').textContent = user.username;
       $('#login-password').value = '';
+      try { sessionStorage.setItem('dmj_is_admin', '1'); } catch {}
       showDashboard();
     } catch (err) {
       loginError.textContent = err.message || 'Login failed';
@@ -223,6 +226,7 @@
 
   $('#logout-btn').addEventListener('click', async () => {
     await api('/api/logout', { method: 'POST' }).catch(() => {});
+    try { sessionStorage.removeItem('dmj_is_admin'); } catch {}
     state.user = null;
     showLogin();
   });

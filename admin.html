@@ -46,6 +46,7 @@
         <button class="admin-tab active" data-tab="links">Links</button>
         <button class="admin-tab" data-tab="info">Edit Info</button>
         <button class="admin-tab" data-tab="media">Media</button>
+        <button class="admin-tab" data-tab="analytics">Analytics</button>
       </nav>
       <div class="admin-user">
         <span id="user-label">davidmausjr</span>
@@ -129,6 +130,96 @@
         </div>
       </section>
 
+      <!-- Tab 4: Analytics -->
+      <section class="tab-panel" id="tab-analytics" hidden>
+        <div class="panel-header">
+          <div>
+            <h2>Analytics</h2>
+            <p class="panel-sub">Traffic, sources, and product performance across the site.</p>
+          </div>
+          <div class="analytics-controls">
+            <div class="range-toggle" id="range-toggle" role="tablist" aria-label="Time range">
+              <button class="range-btn" data-range="day" role="tab">Day</button>
+              <button class="range-btn" data-range="week" role="tab">Week</button>
+              <button class="range-btn active" data-range="month" role="tab" aria-selected="true">Month</button>
+              <button class="range-btn" data-range="year" role="tab">Year</button>
+            </div>
+            <button class="btn-ghost btn-refresh" id="refresh-analytics" title="Refresh">↻</button>
+            <span class="active-pill" id="active-now"><span class="dot"></span> <span id="active-count">–</span> active now</span>
+          </div>
+        </div>
+
+        <!-- Top stat cards -->
+        <div class="stats-row" id="stats-row">
+          <div class="stat-card"><div class="stat-num" id="stat-pv">–</div><div class="stat-label">Pageviews</div><div class="stat-delta" id="stat-pv-delta"></div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-uv">–</div><div class="stat-label">Unique visitors</div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-clicks">–</div><div class="stat-label">Product clicks</div><div class="stat-delta" id="stat-clicks-delta"></div></div>
+          <div class="stat-card"><div class="stat-num" id="stat-ctr">–</div><div class="stat-label">Click-through rate</div></div>
+        </div>
+
+        <!-- Timeseries chart -->
+        <div class="analytics-card">
+          <div class="card-header">
+            <h3>Pageviews over time</h3>
+            <div class="metric-toggle">
+              <button class="metric-btn active" data-metric="pageviews">Pageviews</button>
+              <button class="metric-btn" data-metric="clicks">Product clicks</button>
+            </div>
+          </div>
+          <div class="chart-container" id="timeseries-chart"></div>
+        </div>
+
+        <!-- Sources + Top pages -->
+        <div class="analytics-row-2col">
+          <div class="analytics-card">
+            <div class="card-header"><h3>Traffic sources</h3></div>
+            <div class="chart-row">
+              <div class="chart-container chart-donut" id="sources-chart"></div>
+              <ul class="legend-list" id="sources-list"></ul>
+            </div>
+          </div>
+          <div class="analytics-card">
+            <div class="card-header"><h3>Top pages</h3></div>
+            <ul class="rank-list" id="pages-list"><li class="empty-state">No data yet</li></ul>
+          </div>
+        </div>
+
+        <!-- Devices + Countries -->
+        <div class="analytics-row-2col">
+          <div class="analytics-card">
+            <div class="card-header"><h3>Device</h3></div>
+            <ul class="device-list" id="devices-list"></ul>
+          </div>
+          <div class="analytics-card">
+            <div class="card-header"><h3>Top countries</h3></div>
+            <ul class="rank-list" id="countries-list"><li class="empty-state">No data yet</li></ul>
+          </div>
+        </div>
+
+        <!-- Product clicks table -->
+        <div class="analytics-card">
+          <div class="card-header">
+            <h3>Product clicks</h3>
+            <input type="search" class="products-search" id="products-search" placeholder="Search products…">
+          </div>
+          <div class="products-table-wrap">
+            <table class="products-table">
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Category</th>
+                  <th class="sortable" data-sort="clicks">This period <span class="sort-arrow">↓</span></th>
+                  <th class="sortable" data-sort="allTimeClicks">All time</th>
+                </tr>
+              </thead>
+              <tbody id="products-tbody">
+                <tr><td colspan="4" class="loading">Loading…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
@@ -142,6 +233,9 @@
   <!-- Toast -->
   <div class="toast" id="toast" hidden></div>
 
+  <!-- ApexCharts (only loads on admin page) -->
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.54.0/dist/apexcharts.min.js" defer></script>
   <script src="js/admin.js"></script>
+  <script src="js/analytics.js" defer></script>
 </body>
 </html>

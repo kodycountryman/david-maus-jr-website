@@ -39,7 +39,7 @@
     const target = (p.link && /^https?:\/\//.test(p.link)) ? ' target="_blank" rel="noopener noreferrer"' : '';
 
     return `
-      <div class="product-card" data-category="${escapeHtml(p.category)}">
+      <div class="product-card" data-category="${escapeHtml(p.category)}" data-product-id="${p.id}">
         ${imgHtml}
         <div class="product-card-body">
           <h3>${escapeHtml(p.title)}</h3>
