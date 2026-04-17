@@ -8,21 +8,37 @@
   if (location.pathname.startsWith('/admin')) return;
   try { if (sessionStorage.getItem('dmj_is_admin') === '1') return; } catch {}
 
+  const genId = () =>
+    crypto.randomUUID ? crypto.randomUUID()
+                      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                          const r = Math.random() * 16 | 0;
+                          const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                          return v.toString(16);
+                        });
+
   // Per-tab session id (lives until tab closes)
   let sid;
   try {
     sid = sessionStorage.getItem('dmj_sid');
     if (!sid) {
-      sid = crypto.randomUUID ? crypto.randomUUID()
-                              : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-                                  const r = Math.random() * 16 | 0;
-                                  const v = c === 'x' ? r : (r & 0x3 | 0x8);
-                                  return v.toString(16);
-                                });
+      sid = genId();
       sessionStorage.setItem('dmj_sid', sid);
     }
   } catch {
     sid = 'nostorage-' + Math.random().toString(36).slice(2, 14);
+  }
+
+  // Persistent visitor id (lives across tabs + sessions) — used for
+  // new-vs-returning breakdown. Anonymous UUID, no PII.
+  let vid;
+  try {
+    vid = localStorage.getItem('dmj_vid');
+    if (!vid) {
+      vid = genId();
+      localStorage.setItem('dmj_vid', vid);
+    }
+  } catch {
+    vid = sid; // fallback when localStorage blocked
   }
 
   const send = (path, payload) => {
@@ -48,6 +64,7 @@
       path: location.pathname + location.search,
       referrer: document.referrer || '',
       session_id: sid,
+      visitor_id: vid,
     });
   };
 
@@ -69,6 +86,7 @@
       product_id: parseInt(pid, 10),
       referrer: document.referrer || '',
       session_id: sid,
+      visitor_id: vid,
     });
     // Don't preventDefault — link continues as normal
   }, { capture: true });

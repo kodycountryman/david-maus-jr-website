@@ -150,23 +150,47 @@
         </div>
 
         <!-- Top stat cards -->
-        <div class="stats-row" id="stats-row">
+        <div class="stats-row stats-row-6" id="stats-row">
           <div class="stat-card"><div class="stat-num" id="stat-pv">–</div><div class="stat-label">Pageviews</div><div class="stat-delta" id="stat-pv-delta"></div></div>
           <div class="stat-card"><div class="stat-num" id="stat-uv">–</div><div class="stat-label">Unique visitors</div></div>
           <div class="stat-card"><div class="stat-num" id="stat-clicks">–</div><div class="stat-label">Product clicks</div><div class="stat-delta" id="stat-clicks-delta"></div></div>
           <div class="stat-card"><div class="stat-num" id="stat-ctr">–</div><div class="stat-label">Click-through rate</div></div>
+          <div class="stat-card stat-card-split">
+            <div class="split-row"><span class="split-label">New</span><span class="split-val" id="stat-new">–</span></div>
+            <div class="split-row"><span class="split-label">Returning</span><span class="split-val" id="stat-returning">–</span></div>
+            <div class="stat-label">Visitors</div>
+          </div>
+          <div class="stat-card"><div class="stat-num" id="stat-conversion">–</div><div class="stat-label">Product-picks conversion</div><div class="stat-sub" id="stat-conversion-sub">Of visitors to /product-picks</div></div>
         </div>
 
-        <!-- Timeseries chart -->
+        <!-- Timeseries chart + live feed side by side -->
+        <div class="analytics-row-timeseries">
+          <div class="analytics-card">
+            <div class="card-header">
+              <h3>Pageviews over time</h3>
+              <div class="metric-toggle">
+                <button class="metric-btn active" data-metric="pageviews">Pageviews</button>
+                <button class="metric-btn" data-metric="clicks">Product clicks</button>
+              </div>
+            </div>
+            <div class="chart-container" id="timeseries-chart"></div>
+          </div>
+          <div class="analytics-card live-card">
+            <div class="card-header">
+              <h3>Live activity</h3>
+              <span class="live-indicator"><span class="live-dot"></span> Live</span>
+            </div>
+            <ul class="live-feed" id="live-feed"><li class="empty-state">Loading…</li></ul>
+          </div>
+        </div>
+
+        <!-- Peak activity heatmap -->
         <div class="analytics-card">
           <div class="card-header">
-            <h3>Pageviews over time</h3>
-            <div class="metric-toggle">
-              <button class="metric-btn active" data-metric="pageviews">Pageviews</button>
-              <button class="metric-btn" data-metric="clicks">Product clicks</button>
-            </div>
+            <h3>Peak activity by day &amp; hour</h3>
+            <span class="panel-sub">Darker = more pageviews. Times in UTC.</span>
           </div>
-          <div class="chart-container" id="timeseries-chart"></div>
+          <div class="heatmap" id="heatmap"></div>
         </div>
 
         <!-- Sources + Top pages -->
@@ -182,6 +206,15 @@
             <div class="card-header"><h3>Top pages</h3></div>
             <ul class="rank-list" id="pages-list"><li class="empty-state">No data yet</li></ul>
           </div>
+        </div>
+
+        <!-- Top referring URLs -->
+        <div class="analytics-card">
+          <div class="card-header">
+            <h3>Top referring URLs</h3>
+            <span class="panel-sub">Exactly which posts &amp; videos are sending traffic</span>
+          </div>
+          <ul class="referrer-list" id="referrers-list"><li class="empty-state">No external referrers yet</li></ul>
         </div>
 
         <!-- Devices + Countries -->
@@ -208,12 +241,13 @@
                 <tr>
                   <th>Title</th>
                   <th>Category</th>
+                  <th>Top source</th>
                   <th class="sortable" data-sort="clicks">This period <span class="sort-arrow">↓</span></th>
                   <th class="sortable" data-sort="allTimeClicks">All time</th>
                 </tr>
               </thead>
               <tbody id="products-tbody">
-                <tr><td colspan="4" class="loading">Loading…</td></tr>
+                <tr><td colspan="5" class="loading">Loading…</td></tr>
               </tbody>
             </table>
           </div>

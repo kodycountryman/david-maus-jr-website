@@ -490,7 +490,7 @@ function fillBuckets(rows, range) {
 async function handleTrackPageview(request, env, ctx) {
   let body;
   try { body = await request.json(); } catch { return json({ ok: false }, 400); }
-  const { path, referrer, session_id } = body || {};
+  const { path, referrer, session_id, visitor_id } = body || {};
   if (!path || !session_id) return json({ ok: false }, 400);
   // Don't track admin
   if (typeof path === 'string' && path.startsWith('/admin')) return json({ ok: true, skipped: 'admin' });
@@ -513,10 +513,11 @@ async function handleTrackPageview(request, env, ctx) {
     : '/';
   const refFull = typeof referrer === 'string' ? referrer.slice(0, 512) : null;
   const sid = String(session_id).slice(0, 64);
+  const vid = visitor_id ? String(visitor_id).slice(0, 64) : null;
 
   const writePromise = env.DB
-    .prepare(`INSERT INTO pageviews (path, referrer_source, referrer_full, device, country, session_id) VALUES (?, ?, ?, ?, ?, ?)`)
-    .bind(cleanPath, source, refFull, device, country, sid)
+    .prepare(`INSERT INTO pageviews (path, referrer_source, referrer_full, device, country, session_id, visitor_id) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+    .bind(cleanPath, source, refFull, device, country, sid, vid)
     .run()
     .catch(() => {});
 
@@ -527,7 +528,7 @@ async function handleTrackPageview(request, env, ctx) {
 async function handleTrackClick(request, env, ctx) {
   let body;
   try { body = await request.json(); } catch { return json({ ok: false }, 400); }
-  const { product_id, referrer, session_id } = body || {};
+  const { product_id, referrer, session_id, visitor_id } = body || {};
   const pid = parseInt(product_id, 10);
   if (!pid || !session_id) return json({ ok: false }, 400);
 
@@ -538,10 +539,11 @@ async function handleTrackClick(request, env, ctx) {
   const source = parseSource(referrer, null);
   const country = request.headers.get('CF-IPCountry') || null;
   const sid = String(session_id).slice(0, 64);
+  const vid = visitor_id ? String(visitor_id).slice(0, 64) : null;
 
   const writePromise = env.DB
-    .prepare(`INSERT INTO product_clicks (product_id, referrer_source, device, country, session_id) VALUES (?, ?, ?, ?, ?)`)
-    .bind(pid, source, device, country, sid)
+    .prepare(`INSERT INTO product_clicks (product_id, referrer_source, device, country, session_id, visitor_id) VALUES (?, ?, ?, ?, ?, ?)`)
+    .bind(pid, source, device, country, sid, vid)
     .run()
     .catch(() => {});
 
@@ -559,19 +561,60 @@ async function handleAnalyticsOverview(request, env) {
   const { since } = rangeToSql(range);
   const prev = rangeToPrevSql(range);
 
-  const [pv, uv, pvPrev, clicks, clicksPrev, active] = await Promise.all([
+  // Conversion rate: of sessions that viewed /product-picks.html in this range,
+  // what % also had at least one product click (anytime)?
+  const conversionSql = `
+    SELECT
+      COUNT(DISTINCT pv.session_id) AS picks_sessions,
+      COUNT(DISTINCT CASE WHEN pc.session_id IS NOT NULL THEN pv.session_id END) AS converted
+    FROM pageviews pv
+    LEFT JOIN product_clicks pc ON pc.session_id = pv.session_id
+    WHERE pv.path = '/product-picks.html'
+      AND pv.device != 'bot'
+      AND pv.created_at >= ${since}
+  `;
+
+  // New vs returning: a visitor counts as "new" if their earliest pageview
+  // anywhere in DB falls inside this range; else "returning".
+  const newReturningSql = `
+    WITH vids AS (
+      SELECT DISTINCT visitor_id
+      FROM pageviews
+      WHERE device != 'bot' AND created_at >= ${since} AND visitor_id IS NOT NULL
+    ),
+    firsts AS (
+      SELECT visitor_id, MIN(created_at) AS first_seen
+      FROM pageviews
+      WHERE visitor_id IN (SELECT visitor_id FROM vids)
+      GROUP BY visitor_id
+    )
+    SELECT
+      SUM(CASE WHEN first_seen >= ${since} THEN 1 ELSE 0 END) AS new_visitors,
+      SUM(CASE WHEN first_seen < ${since} THEN 1 ELSE 0 END) AS returning_visitors
+    FROM firsts
+  `;
+
+  const [pv, uv, pvPrev, clicks, clicksPrev, active, conv, nr] = await Promise.all([
     env.DB.prepare(`SELECT COUNT(*) c FROM pageviews WHERE device != 'bot' AND created_at >= ${since}`).first(),
     env.DB.prepare(`SELECT COUNT(DISTINCT session_id) c FROM pageviews WHERE device != 'bot' AND created_at >= ${since}`).first(),
     env.DB.prepare(`SELECT COUNT(*) c FROM pageviews WHERE device != 'bot' AND created_at >= ${prev.since} AND created_at < ${prev.until}`).first(),
     env.DB.prepare(`SELECT COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${since}`).first(),
     env.DB.prepare(`SELECT COUNT(*) c FROM product_clicks WHERE device != 'bot' AND created_at >= ${prev.since} AND created_at < ${prev.until}`).first(),
     env.DB.prepare(`SELECT COUNT(DISTINCT session_id) c FROM pageviews WHERE device != 'bot' AND created_at > datetime('now','-5 minutes')`).first(),
+    env.DB.prepare(conversionSql).first(),
+    env.DB.prepare(newReturningSql).first(),
   ]);
 
   const pct = (curr, prev) => {
     if (!prev) return curr > 0 ? 100 : 0;
     return Math.round(((curr - prev) / prev) * 100);
   };
+
+  const picksSessions = conv?.picks_sessions || 0;
+  const converted = conv?.converted || 0;
+  const conversionRate = picksSessions > 0
+    ? Math.round((converted / picksSessions) * 1000) / 10
+    : 0;
 
   return json({
     pageviews: pv?.c || 0,
@@ -581,6 +624,11 @@ async function handleAnalyticsOverview(request, env) {
     deltaPageviewsPct: pct(pv?.c || 0, pvPrev?.c || 0),
     deltaClicksPct: pct(clicks?.c || 0, clicksPrev?.c || 0),
     ctr: (pv?.c || 0) > 0 ? Math.round(((clicks?.c || 0) / (pv?.c || 0)) * 1000) / 10 : 0,
+    conversionRate,
+    picksVisitors: picksSessions,
+    picksConverted: converted,
+    newVisitors: nr?.new_visitors || 0,
+    returningVisitors: nr?.returning_visitors || 0,
   });
 }
 
@@ -646,7 +694,8 @@ async function handleAnalyticsProducts(request, env) {
            p.category AS category,
            p.code AS code,
            COALESCE(period.c, 0) AS clicks,
-           COALESCE(total.c, 0) AS allTimeClicks
+           COALESCE(total.c, 0) AS allTimeClicks,
+           top_src.src AS top_source
     FROM products p
     LEFT JOIN (
       SELECT product_id, COUNT(*) AS c
@@ -660,10 +709,96 @@ async function handleAnalyticsProducts(request, env) {
       WHERE device != 'bot'
       GROUP BY product_id
     ) total ON total.product_id = p.id
+    LEFT JOIN (
+      -- Top referrer source per product in range
+      SELECT product_id, referrer_source AS src
+      FROM (
+        SELECT product_id, referrer_source, COUNT(*) AS c,
+               ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY COUNT(*) DESC) AS rn
+        FROM product_clicks
+        WHERE device != 'bot' AND created_at >= ${since}
+        GROUP BY product_id, referrer_source
+      )
+      WHERE rn = 1
+    ) top_src ON top_src.product_id = p.id
     ORDER BY clicks DESC, allTimeClicks DESC
   `;
   const { results } = await env.DB.prepare(q).all();
   return json({ products: results || [] });
+}
+
+async function handleAnalyticsLive(request, env) {
+  const url = new URL(request.url);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '40', 10), 100);
+  // Union of recent pageviews + product clicks, ordered by time
+  const q = `
+    SELECT 'pageview' AS type, created_at,
+           path AS detail, NULL AS product_id, NULL AS product_title,
+           referrer_source, referrer_full, device, country, session_id
+    FROM pageviews
+    WHERE device != 'bot'
+    UNION ALL
+    SELECT 'click' AS type, pc.created_at,
+           p.title AS detail, pc.product_id AS product_id, p.title AS product_title,
+           pc.referrer_source, NULL AS referrer_full, pc.device, pc.country, pc.session_id
+    FROM product_clicks pc
+    LEFT JOIN products p ON p.id = pc.product_id
+    WHERE pc.device != 'bot'
+    ORDER BY created_at DESC
+    LIMIT ?
+  `;
+  const { results } = await env.DB.prepare(q).bind(limit).all();
+  return json({ events: results || [] });
+}
+
+async function handleAnalyticsReferrers(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  const q = `
+    SELECT referrer_full AS url,
+           referrer_source AS source,
+           COUNT(*) AS views,
+           COUNT(DISTINCT session_id) AS uniqueVisitors
+    FROM pageviews
+    WHERE device != 'bot'
+      AND created_at >= ${since}
+      AND referrer_full IS NOT NULL
+      AND referrer_full != ''
+      AND referrer_full NOT LIKE '%dmjr.countrymankody14.workers.dev%'
+      AND referrer_full NOT LIKE '%davidmausjr.com%'
+    GROUP BY referrer_full
+    ORDER BY views DESC
+    LIMIT 15
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  return json({ referrers: results || [] });
+}
+
+async function handleAnalyticsHeatmap(request, env) {
+  const url = new URL(request.url);
+  const range = url.searchParams.get('range') || 'month';
+  const { since } = rangeToSql(range);
+  // Day of week: 0=Sunday .. 6=Saturday. Hour: 0..23 in UTC
+  // (close enough for pattern detection — not localizing per visitor).
+  const q = `
+    SELECT CAST(strftime('%w', created_at) AS INTEGER) AS dow,
+           CAST(strftime('%H', created_at) AS INTEGER) AS hour,
+           COUNT(*) AS views
+    FROM pageviews
+    WHERE device != 'bot' AND created_at >= ${since}
+    GROUP BY dow, hour
+  `;
+  const { results } = await env.DB.prepare(q).all();
+  // Build 7 x 24 grid, dense
+  const grid = Array.from({ length: 7 }, () => Array(24).fill(0));
+  let max = 0;
+  for (const r of results || []) {
+    if (r.dow == null || r.hour == null) continue;
+    grid[r.dow][r.hour] = r.views;
+    if (r.views > max) max = r.views;
+  }
+  return json({ grid, max });
 }
 
 async function handleAnalyticsDevices(request, env) {
@@ -762,6 +897,9 @@ export default {
         if (path === '/api/analytics/products')   return handleAnalyticsProducts(request, env);
         if (path === '/api/analytics/devices')    return handleAnalyticsDevices(request, env);
         if (path === '/api/analytics/countries')  return handleAnalyticsCountries(request, env);
+        if (path === '/api/analytics/live')       return handleAnalyticsLive(request, env);
+        if (path === '/api/analytics/referrers')  return handleAnalyticsReferrers(request, env);
+        if (path === '/api/analytics/heatmap')    return handleAnalyticsHeatmap(request, env);
       }
 
       // /api/content/:key

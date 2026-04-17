@@ -113,11 +113,13 @@
 
   function startAutoRefresh() {
     stopAutoRefresh();
+    // Faster loop for the live feed + active count (every 10s)
     state.refreshTimer = setInterval(() => {
       if (!document.hidden && !document.getElementById('tab-analytics')?.hidden) {
         refreshActiveUsers();
+        refreshLive();
       }
-    }, 30000);
+    }, 10000);
   }
   function stopAutoRefresh() {
     if (state.refreshTimer) clearInterval(state.refreshTimer);
@@ -165,6 +167,9 @@
       refreshDevices(r),
       refreshCountries(r),
       refreshProducts(r),
+      refreshLive(),
+      refreshReferrers(r),
+      refreshHeatmap(r),
     ]);
   }
 
@@ -188,8 +193,16 @@
       $('#stat-pv-delta').innerHTML = fmtDelta(d.deltaPageviewsPct);
       $('#stat-clicks-delta').innerHTML = fmtDelta(d.deltaClicksPct);
       $('#active-count').textContent = d.activeNow;
+      if ($('#stat-new')) $('#stat-new').textContent = fmt(d.newVisitors);
+      if ($('#stat-returning')) $('#stat-returning').textContent = fmt(d.returningVisitors);
+      if ($('#stat-conversion')) $('#stat-conversion').textContent = (d.conversionRate || 0).toFixed(1) + '%';
+      if ($('#stat-conversion-sub')) {
+        $('#stat-conversion-sub').textContent = d.picksVisitors
+          ? `${fmt(d.picksConverted)} of ${fmt(d.picksVisitors)} picks visitors`
+          : 'Of visitors to /product-picks';
+      }
     } catch {
-      ['stat-pv','stat-uv','stat-clicks','stat-ctr'].forEach(id => $('#' + id).textContent = '0');
+      ['stat-pv','stat-uv','stat-clicks','stat-ctr','stat-new','stat-returning','stat-conversion'].forEach(id => { const e = $('#' + id); if (e) e.textContent = '0'; });
     }
   }
 
@@ -429,17 +442,162 @@
     rows.sort((a, b) => ((a[key] || 0) - (b[key] || 0)) * dir);
 
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="4" class="empty-state">No products</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="empty-state">No products</td></tr>';
       return;
     }
-    body.innerHTML = rows.map(r => `
-      <tr>
-        <td class="title-cell">${escapeHtml(r.title)}${r.code ? ` <span class="code-pill-sm">${escapeHtml(r.code)}</span>` : ''}</td>
-        <td><span class="cat-pill">${escapeHtml(CAT_LABELS[r.category] || r.category)}</span></td>
-        <td class="num-cell">${fmt(r.clicks)}</td>
-        <td class="num-cell">${fmt(r.allTimeClicks)}</td>
-      </tr>
-    `).join('');
+    body.innerHTML = rows.map(r => {
+      const src = r.top_source
+        ? `<span class="source-badge" data-source="${escapeHtml(r.top_source)}">${escapeHtml(SOURCE_LABELS[r.top_source] || r.top_source)}</span>`
+        : '<span class="source-badge-empty">—</span>';
+      return `
+        <tr>
+          <td class="title-cell">${escapeHtml(r.title)}${r.code ? ` <span class="code-pill-sm">${escapeHtml(r.code)}</span>` : ''}</td>
+          <td><span class="cat-pill">${escapeHtml(CAT_LABELS[r.category] || r.category)}</span></td>
+          <td>${src}</td>
+          <td class="num-cell">${fmt(r.clicks)}</td>
+          <td class="num-cell">${fmt(r.allTimeClicks)}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // =========================================================================
+  // Live activity feed
+  // =========================================================================
+  const timeAgo = (isoUTC) => {
+    // D1 datetime() returns UTC with no timezone — treat as Z
+    const d = new Date((isoUTC || '').replace(' ', 'T') + 'Z');
+    const s = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+    if (s < 5) return 'just now';
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s / 60) + 'm ago';
+    if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+    return Math.floor(s / 86400) + 'd ago';
+  };
+
+  const DEVICE_ICON = { mobile: '📱', desktop: '💻', tablet: '📟' };
+
+  async function refreshLive() {
+    const feed = document.getElementById('live-feed');
+    if (!feed) return;
+    try {
+      const d = await api('/api/analytics/live?limit=40');
+      const events = d.events || [];
+      if (!events.length) {
+        feed.innerHTML = '<li class="empty-state">No activity yet</li>';
+        return;
+      }
+      feed.innerHTML = events.map(e => {
+        const isClick = e.type === 'click';
+        const icon = isClick ? '🛒' : '👁';
+        const tag = isClick
+          ? `<span class="live-tag live-click">Click</span>`
+          : `<span class="live-tag live-view">View</span>`;
+        const detail = isClick
+          ? escapeHtml(e.product_title || e.detail || 'product')
+          : escapeHtml(PAGE_LABELS[e.detail] || e.detail);
+        const src = SOURCE_LABELS[e.referrer_source] || e.referrer_source || '—';
+        const country = e.country ? `${flagOf(e.country)} ${escapeHtml(e.country)}` : '';
+        return `
+          <li class="live-row">
+            <span class="live-icon">${icon}</span>
+            <span class="live-body">
+              <div class="live-detail">${tag} ${detail}</div>
+              <div class="live-meta">
+                <span class="live-source" data-source="${escapeHtml(e.referrer_source || 'other')}">${escapeHtml(src)}</span>
+                <span class="live-dev">${DEVICE_ICON[e.device] || '•'} ${escapeHtml(e.device || '')}</span>
+                <span class="live-country">${country}</span>
+              </div>
+            </span>
+            <span class="live-time">${timeAgo(e.created_at)}</span>
+          </li>
+        `;
+      }).join('');
+    } catch {
+      feed.innerHTML = '<li class="empty-state">Couldn\'t load</li>';
+    }
+  }
+
+  // =========================================================================
+  // Top referring URLs
+  // =========================================================================
+  function prettyHost(url) {
+    try {
+      const u = new URL(url);
+      return u.hostname.replace(/^www\./, '') + (u.pathname !== '/' ? u.pathname : '');
+    } catch {
+      return url;
+    }
+  }
+
+  async function refreshReferrers(range) {
+    const list = document.getElementById('referrers-list');
+    if (!list) return;
+    try {
+      const d = await api('/api/analytics/referrers?range=' + range);
+      const refs = d.referrers || [];
+      if (!refs.length) {
+        list.innerHTML = '<li class="empty-state">No external referrers yet</li>';
+        return;
+      }
+      const max = Math.max(...refs.map(r => r.views));
+      list.innerHTML = refs.map(r => {
+        const pct = max ? (r.views / max) * 100 : 0;
+        const pretty = prettyHost(r.url);
+        const label = SOURCE_LABELS[r.source] || r.source;
+        return `
+          <li class="referrer-row">
+            <span class="source-badge" data-source="${escapeHtml(r.source)}">${escapeHtml(label)}</span>
+            <a class="referrer-url" href="${escapeHtml(r.url)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(r.url)}">${escapeHtml(pretty)}</a>
+            <span class="referrer-bar"><span class="referrer-bar-fill" style="width:${pct}%"></span></span>
+            <span class="referrer-val">${fmt(r.views)}</span>
+          </li>
+        `;
+      }).join('');
+    } catch {
+      list.innerHTML = '<li class="empty-state">Couldn\'t load</li>';
+    }
+  }
+
+  // =========================================================================
+  // Peak-activity heatmap (7 days × 24 hours)
+  // =========================================================================
+  const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  async function refreshHeatmap(range) {
+    const el = document.getElementById('heatmap');
+    if (!el) return;
+    try {
+      const d = await api('/api/analytics/heatmap?range=' + range);
+      const grid = d.grid || [];
+      const max = d.max || 0;
+      if (!max) {
+        el.innerHTML = '<div class="empty-state" style="padding:20px;">No data yet</div>';
+        return;
+      }
+      // Build header row (hours)
+      const hourHeader = ['<div class="hm-corner"></div>'];
+      for (let h = 0; h < 24; h++) {
+        const label = (h % 3 === 0) ? (h === 0 ? '12a' : h === 12 ? '12p' : h > 12 ? (h - 12) + 'p' : h + 'a') : '';
+        hourHeader.push(`<div class="hm-hour">${label}</div>`);
+      }
+      const rows = [hourHeader.join('')];
+      for (let dow = 0; dow < 7; dow++) {
+        const cells = [`<div class="hm-day">${DAY_LABELS[dow]}</div>`];
+        for (let h = 0; h < 24; h++) {
+          const v = grid[dow] ? grid[dow][h] || 0 : 0;
+          const intensity = max ? v / max : 0;
+          // Use color-mix-style bg opacity
+          const bg = v === 0 ? '#f0f0f0' : `rgba(252, 223, 76, ${0.15 + intensity * 0.85})`;
+          const border = v > 0 ? '#f0d740' : 'transparent';
+          cells.push(`<div class="hm-cell" style="background:${bg};border-color:${border}" title="${DAY_LABELS[dow]} ${h}:00 — ${fmt(v)} views"></div>`);
+        }
+        rows.push(cells.join(''));
+      }
+      el.innerHTML = rows.join('');
+    } catch {
+      el.innerHTML = '<div class="empty-state">Couldn\'t load</div>';
+    }
   }
 
   function escapeHtml(s) {
