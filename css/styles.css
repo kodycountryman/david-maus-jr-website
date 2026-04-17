@@ -1239,6 +1239,15 @@ h3, .h3 {
   padding-top: 0;
 }
 
+/* Pinned header — subtle yellow accent to distinguish from categories */
+.category-header.category-header-pinned {
+  color: var(--near-black);
+  border-bottom-color: var(--yellow);
+  border-bottom-width: 2px;
+  letter-spacing: 0.08em;
+}
+
+
 /* Grid fade transition when switching tabs */
 .picks-grid {
   transition: opacity 0.15s ease;

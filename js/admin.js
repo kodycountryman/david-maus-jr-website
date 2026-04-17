@@ -280,9 +280,9 @@
         el.hidden = false;
       }
     });
-    modal.addEventListener('click', (e) => {
+    modal.onclick = (e) => {
       if (e.target.hasAttribute('data-close')) closeModal();
-    });
+    };
   });
 
   // ---------- Tabs ----------
@@ -343,17 +343,20 @@
     }
 
     tbody.innerHTML = rows.map(p => {
+      const pinBadge = p.is_pinned ? '<span class="mini-badge badge-pinned" title="Pinned to top">📌</span>' : '';
       const featuredBadge = p.is_featured ? '<span class="mini-badge badge-featured" title="Featured on homepage">★</span>' : '';
       const animBadge = p.animation ? `<span class="mini-badge badge-anim" title="Animation: ${escapeHtml(p.animation)}">✨</span>` : '';
+      const pinBtnClass = p.is_pinned ? 'btn-icon btn-pin-active' : 'btn-icon';
       return `
-      <tr data-id="${p.id}">
-        <td class="title-cell">${featuredBadge}${animBadge} ${escapeHtml(p.title)}</td>
+      <tr data-id="${p.id}"${p.is_pinned ? ' class="row-pinned"' : ''}>
+        <td class="title-cell">${pinBadge}${featuredBadge}${animBadge} ${escapeHtml(p.title)}</td>
         <td><span class="cat-pill">${escapeHtml(catLabel(p.category))}</span></td>
         <td>${p.code ? `<span class="code-pill">${escapeHtml(p.code)}</span>` : '<span style="color:#bbb;">—</span>'}</td>
         <td><span class="link-truncate">${p.link ? escapeHtml(p.link) : '—'}</span></td>
         <td><span class="active-badge ${p.active ? 'yes' : 'no'}">${p.active ? '● Active' : '○ Hidden'}</span></td>
         <td>
           <div class="row-actions">
+            <button class="${pinBtnClass}" data-pin="${p.id}" title="${p.is_pinned ? 'Unpin' : 'Pin to top'}">📌</button>
             <button class="btn-icon" data-edit="${p.id}" title="Edit">✎</button>
             <button class="btn-icon btn-danger-icon" data-del="${p.id}" title="Delete">✕</button>
           </div>
@@ -366,9 +369,28 @@
   catFilter.addEventListener('change', renderLinks);
   searchFilter.addEventListener('input', renderLinks);
 
-  tbody.addEventListener('click', (e) => {
+  tbody.addEventListener('click', async (e) => {
     const editId = e.target.closest('[data-edit]')?.dataset.edit;
     const delId = e.target.closest('[data-del]')?.dataset.del;
+    const pinId = e.target.closest('[data-pin]')?.dataset.pin;
+    if (pinId) {
+      const prod = state.products.find(x => x.id == pinId);
+      if (!prod) return;
+      const newVal = prod.is_pinned ? 0 : 1;
+      try {
+        const { product: updated } = await api(`/api/products/${pinId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ is_pinned: newVal })
+        });
+        const i = state.products.findIndex(x => x.id == pinId);
+        if (i >= 0) state.products[i] = updated;
+        renderLinks();
+        showToast(newVal ? 'Pinned to top' : 'Unpinned', 'success');
+      } catch (err) {
+        showToast(err.message || 'Failed to pin', 'error');
+      }
+      return;
+    }
     if (editId) openProductModal(state.products.find(p => p.id == editId));
     if (delId) deleteProduct(parseInt(delId, 10));
   });
@@ -440,6 +462,10 @@
               <input type="checkbox" name="is_featured" ${p.is_featured ? 'checked' : ''}>
               <span>Feature on homepage <span class="hint-inline">(shows in the homepage Product Picks preview, max 6)</span></span>
             </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="is_pinned" ${p.is_pinned ? 'checked' : ''}>
+              <span>📌 Pin to top of Product Picks page <span class="hint-inline">(appears above all categories)</span></span>
+            </label>
           </div>
         </form>
       </div>
@@ -453,7 +479,10 @@
 
     attachImagePicker(p.image_url);
 
-    modal.addEventListener('click', async (e) => {
+    // Use .onclick (replaces previous handler each open) instead of
+    // addEventListener (which would accumulate — a stale Add-Link handler
+    // would silently fire on later saves and create duplicate products).
+    modal.onclick = async (e) => {
       if (e.target.hasAttribute('data-close')) closeModal();
       if (e.target.hasAttribute('data-delete')) {
         if (confirm(`Delete "${p.title}"?`)) {
@@ -463,6 +492,7 @@
       }
       if (e.target.hasAttribute('data-save')) {
         const form = $('#product-form');
+        if (!form) return; // modal already replaced
         const fd = new FormData(form);
         if (!fd.get('title') || !fd.get('category')) {
           showToast('Title and category required', 'error');
@@ -477,6 +507,7 @@
           image_url: $('#img-url-input').value || null,
           active: fd.get('active') ? 1 : 0,
           is_featured: fd.get('is_featured') ? 1 : 0,
+          is_pinned: fd.get('is_pinned') ? 1 : 0,
           animation: fd.get('animation') || ''
         };
         try {
@@ -503,7 +534,7 @@
           showToast(err.message || 'Save failed', 'error');
         }
       }
-    });
+    };
   }
 
   async function deleteProduct(id) {

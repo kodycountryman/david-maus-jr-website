@@ -58,14 +58,27 @@
       if (!res.ok) throw new Error('fetch failed');
       const { products } = await res.json();
 
-      // Group by category
+      // Pinned products first — sorted by pinned_order
+      const pinned = products
+        .filter(p => p.is_pinned)
+        .sort((a, b) => (a.pinned_order || 0) - (b.pinned_order || 0));
+
+      // Everything else grouped by category
       const byCat = {};
       for (const p of products) {
+        if (p.is_pinned) continue; // don't double-render
         (byCat[p.category] = byCat[p.category] || []).push(p);
       }
 
-      // Render in canonical category order
       const parts = [];
+
+      // Pinned section (only renders when there's something pinned)
+      if (pinned.length) {
+        parts.push(`<div class="category-header category-header-pinned" data-category-header="pinned">📌 Pinned</div>`);
+        parts.push(pinned.map(renderCard).join(''));
+      }
+
+      // Canonical category order
       for (const cat of CATEGORIES) {
         const items = byCat[cat.slug];
         if (!items || !items.length) continue;
