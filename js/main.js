@@ -80,11 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const updateCount = () => {
       if (!productCount) return;
-      const total = getCards().length;
+      // Exclude spotlight duplicates from totals
+      const real = getCards().filter(c => c.dataset.category !== 'spotlight');
+      const total = real.length;
       const tab = getActiveTab();
       const visible = tab === 'all'
         ? total
-        : getCards().filter(c => c.dataset.category === tab).length;
+        : real.filter(c => c.dataset.category === tab).length;
       productCount.textContent = visible === total
         ? `Showing all ${total} products`
         : `Showing ${visible} of ${total} products`;
@@ -92,7 +94,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const applyFilter = (tab) => {
       getCards().forEach(card => {
-        card.style.display = (tab === 'all' || card.dataset.category === tab) ? '' : 'none';
+        const c = card.dataset.category;
+        // Spotlight cards only show in the 'all' view (they're duplicates of
+        // the real product in its category section — filtering a category
+        // should show the category copy, not the spotlight clone).
+        if (c === 'spotlight') {
+          card.style.display = tab === 'all' ? '' : 'none';
+        } else {
+          card.style.display = (tab === 'all' || c === tab) ? '' : 'none';
+        }
       });
       getHeaders().forEach(h => {
         h.style.display = tab === 'all' ? '' : 'none';

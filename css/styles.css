@@ -1239,12 +1239,29 @@ h3, .h3 {
   padding-top: 0;
 }
 
-/* Pinned header — subtle yellow accent to distinguish from categories */
-.category-header.category-header-pinned {
+/* Spotlight header — bold showcase banner for pinned products on All view */
+.category-header.category-header-spotlight {
   color: var(--near-black);
-  border-bottom-color: var(--yellow);
-  border-bottom-width: 2px;
+  border-bottom: none;
   letter-spacing: 0.08em;
+  font-size: 0.9rem;
+  padding: 28px 0 14px;
+  position: relative;
+}
+.category-header.category-header-spotlight::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--yellow) 0%, var(--yellow) 60%, transparent 100%);
+  border-radius: 2px;
+}
+
+/* Spotlight cards get a subtle yellow-tinted background to feel featured */
+.product-card.card-spotlight {
+  background: linear-gradient(180deg, rgba(252, 223, 76, 0.08), transparent 40%);
 }
 
 

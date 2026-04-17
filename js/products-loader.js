@@ -26,7 +26,7 @@
     }[c]));
   }
 
-  function renderCard(p) {
+  function renderCard(p, opts = {}) {
     const imgHtml = p.image_url
       ? `<div class="placeholder-img"><img src="${escapeHtml(p.image_url)}" alt="${escapeHtml(p.title)}"></div>`
       : `<div class="placeholder-img">Product Image</div>`;
@@ -39,8 +39,12 @@
     const target = (p.link && /^https?:\/\//.test(p.link)) ? ' target="_blank" rel="noopener noreferrer"' : '';
 
     const animClass = p.animation ? ` anim-${escapeHtml(p.animation)}` : '';
+    // data-category="spotlight" when rendered in the spotlight section so
+    // the tab filter treats it differently (only shows in All).
+    const cat = opts.spotlight ? 'spotlight' : p.category;
+    const spotlightClass = opts.spotlight ? ' card-spotlight' : '';
     return `
-      <div class="product-card${animClass}" data-category="${escapeHtml(p.category)}" data-product-id="${p.id}">
+      <div class="product-card${animClass}${spotlightClass}" data-category="${escapeHtml(cat)}" data-product-id="${p.id}">
         ${imgHtml}
         <div class="product-card-body">
           <h3>${escapeHtml(p.title)}</h3>
@@ -63,19 +67,21 @@
         .filter(p => p.is_pinned)
         .sort((a, b) => (a.pinned_order || 0) - (b.pinned_order || 0));
 
-      // Everything else grouped by category
+      // All products grouped by category — pinned products ALSO appear
+      // in their own category so filters still surface them.
       const byCat = {};
       for (const p of products) {
-        if (p.is_pinned) continue; // don't double-render
         (byCat[p.category] = byCat[p.category] || []).push(p);
       }
 
       const parts = [];
 
-      // Pinned section (only renders when there's something pinned)
+      // Spotlight section (shown only on "All" view — filtered views skip it).
+      // Pinned products show here at top + also in their own category section
+      // below, so filtering to a specific category still surfaces them.
       if (pinned.length) {
-        parts.push(`<div class="category-header category-header-pinned" data-category-header="pinned">📌 Pinned</div>`);
-        parts.push(pinned.map(renderCard).join(''));
+        parts.push(`<div class="category-header category-header-spotlight" data-category-header="spotlight">✨ Spotlight</div>`);
+        parts.push(pinned.map(p => renderCard(p, { spotlight: true })).join(''));
       }
 
       // Canonical category order
