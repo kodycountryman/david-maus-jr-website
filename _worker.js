@@ -776,6 +776,92 @@ async function handleAnalyticsReferrers(request, env) {
 }
 
 // ===========================================================================
+// YouTube stats (public, cached 1hr in D1)
+// ===========================================================================
+
+const YT_CHANNEL_ID = 'UCoLlP6lqR2bJP5cUJ6ddt3g'; // David Maus Jr.
+const YT_CACHE_KEY  = 'yt_stats_cache';
+const YT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+// Formatting: 2.4M, 137K, 842
+function formatBigNumber(n) {
+  const v = Number(n) || 0;
+  if (v >= 1_000_000) {
+    const m = v / 1_000_000;
+    return (m >= 10 ? m.toFixed(0) : m.toFixed(1).replace(/\.0$/, '')) + 'M';
+  }
+  if (v >= 1_000) {
+    const k = v / 1_000;
+    return (k >= 100 ? k.toFixed(0) : k.toFixed(1).replace(/\.0$/, '')) + 'K';
+  }
+  return String(v);
+}
+
+async function fetchYouTubeStats(env) {
+  if (!env.YT_API_KEY) {
+    return { ok: false, error: 'YT_API_KEY not configured' };
+  }
+  const url = `https://www.googleapis.com/youtube/v3/channels?part=statistics,snippet&id=${YT_CHANNEL_ID}&key=${env.YT_API_KEY}`;
+  const res = await fetch(url, { cf: { cacheEverything: false } });
+  if (!res.ok) {
+    const text = await res.text();
+    return { ok: false, error: `YouTube API ${res.status}: ${text.slice(0, 200)}` };
+  }
+  const data = await res.json();
+  const channel = data.items && data.items[0];
+  if (!channel) return { ok: false, error: 'Channel not found' };
+  const s = channel.statistics || {};
+  return {
+    ok: true,
+    fetchedAt: Date.now(),
+    channelTitle: channel.snippet?.title || 'DavidMausJr',
+    subscriberCount:  parseInt(s.subscriberCount  || '0', 10),
+    viewCount:        parseInt(s.viewCount        || '0', 10),
+    videoCount:       parseInt(s.videoCount       || '0', 10),
+    subscribersDisplay: formatBigNumber(parseInt(s.subscriberCount || '0', 10)),
+    viewsDisplay:       formatBigNumber(parseInt(s.viewCount       || '0', 10)),
+  };
+}
+
+async function handleYouTubeStats(request, env, ctx) {
+  // 1. Check D1 cache
+  const row = await env.DB
+    .prepare(`SELECT value FROM content WHERE key = ?`)
+    .bind(YT_CACHE_KEY)
+    .first()
+    .catch(() => null);
+
+  let cached = null;
+  if (row && row.value) {
+    try { cached = JSON.parse(row.value); } catch {}
+  }
+
+  const fresh = cached && cached.fetchedAt && (Date.now() - cached.fetchedAt) < YT_CACHE_TTL_MS;
+  if (fresh) {
+    return json({ ...cached, cached: true });
+  }
+
+  // 2. Fetch live
+  const live = await fetchYouTubeStats(env);
+
+  // 3. If live fetch failed, serve stale cache if we have it
+  if (!live.ok) {
+    if (cached) return json({ ...cached, stale: true, error: live.error });
+    return json({ ok: false, error: live.error }, 503);
+  }
+
+  // 4. Persist new cache (upsert). Don't block response.
+  const upsert = env.DB.prepare(
+    `INSERT INTO content (key, value, kind, label, group_name)
+     VALUES (?, ?, 'text', 'YouTube Stats Cache', 'system')
+     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = datetime('now')`
+  ).bind(YT_CACHE_KEY, JSON.stringify(live)).run().catch(() => {});
+  if (ctx && ctx.waitUntil) ctx.waitUntil(upsert); else await upsert;
+
+  return json({ ...live, cached: false });
+}
+
+// ===========================================================================
 // CSV Export
 // ===========================================================================
 
@@ -1145,6 +1231,11 @@ export default {
       if (path === '/api/content') return handleContent(request, env);
       if (path === '/api/products') return handleProducts(request, env);
       if (path === '/api/media') return handleMedia(request, env);
+
+      // YouTube stats (public, cached)
+      if (path === '/api/youtube/stats' && request.method === 'GET') {
+        return handleYouTubeStats(request, env, ctx);
+      }
 
       // Analytics: public tracking (POST only)
       if (path === '/api/track/pageview' && request.method === 'POST') {

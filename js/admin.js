@@ -54,13 +54,13 @@
         { key: 'hero_brand_image', label: 'Hero Image', kind: 'image' },
         { key: 'brand_intro_primary', label: 'Intro (primary)' },
         { key: 'brand_intro_secondary', label: 'Intro (secondary)', kind: 'longtext' },
-        { key: 'stat_1_num', label: 'Stat 1 — Number' },
+        { key: 'stat_1_num', label: 'Stat 1 — Number (auto from YouTube)' },
         { key: 'stat_1_label', label: 'Stat 1 — Label' },
         { key: 'stat_2_num', label: 'Stat 2 — Number' },
         { key: 'stat_2_label', label: 'Stat 2 — Label' },
         { key: 'stat_3_num', label: 'Stat 3 — Number' },
         { key: 'stat_3_label', label: 'Stat 3 — Label' },
-        { key: 'stat_4_num', label: 'Stat 4 — Number' },
+        { key: 'stat_4_num', label: 'Stat 4 — Number (auto from YouTube)' },
         { key: 'stat_4_label', label: 'Stat 4 — Label' }
       ]
     },
