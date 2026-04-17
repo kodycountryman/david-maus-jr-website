@@ -779,7 +779,7 @@ async function handleAnalyticsReferrers(request, env) {
 // YouTube stats (public, cached 1hr in D1)
 // ===========================================================================
 
-const YT_CHANNEL_ID = 'UCoLlP6lqR2bJP5cUJ6ddt3g'; // David Maus Jr.
+const YT_CHANNEL_ID = 'UCasr6iZBDikSQcmOcI7YZ3g'; // DMJR main health & wellness channel
 const YT_CACHE_KEY  = 'yt_stats_cache';
 const YT_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 

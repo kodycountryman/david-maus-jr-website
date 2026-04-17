@@ -30,6 +30,11 @@
       const value = map[key];
       if (value == null) return;
 
+      // Don't overwrite elements that have a dedicated hydrator
+      // (e.g. data-yt-stat owns the number; content-loader can still
+      // own any sibling label, but should skip the number itself)
+      if (el.dataset.ytStat) return;
+
       // If it's an image, set src (and try to preserve query string like ?v=1)
       if (el.tagName === 'IMG') {
         el.src = value;

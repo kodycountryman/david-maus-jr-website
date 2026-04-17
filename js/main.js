@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const ytFallback = document.getElementById('yt-fallback');
 
   if (ytCarousel) {
-    const CHANNEL_ID = 'UCoLlP6lqR2bJP5cUJ6ddt3g';
+    const CHANNEL_ID = 'UCasr6iZBDikSQcmOcI7YZ3g';
     const YT_NS = 'http://www.youtube.com/xml/schemas/2015';
 
     // Confirmed fallback videos (verified via oEmbed)
