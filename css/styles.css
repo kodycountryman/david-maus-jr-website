@@ -2116,3 +2116,104 @@ h3, .h3 {
     padding: 24px 16px;
   }
 }
+
+/* ============================================
+   PRODUCT CARD ANIMATIONS
+   ============================================
+   Opt-in per product via admin → Animation dropdown. Applied as anim-{slug}
+   class on .product-card. Designed to be subtle but eye-catching. */
+
+/* -- Pulse: gentle scale pulse drawing the eye -- */
+.product-card.anim-pulse {
+  animation: card-pulse 2.6s ease-in-out infinite;
+}
+@keyframes card-pulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
+}
+
+/* -- Glow: soft yellow halo that fades in/out -- */
+.product-card.anim-glow {
+  animation: card-glow 2.8s ease-in-out infinite;
+}
+@keyframes card-glow {
+  0%, 100% { box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08), 0 0 0 0 rgba(252, 223, 76, 0); }
+  50%      { box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12), 0 0 22px 4px rgba(252, 223, 76, 0.6); }
+}
+
+/* -- Shimmer: diagonal light sweep across the card -- */
+.product-card.anim-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+.product-card.anim-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(252, 223, 76, 0.35) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: card-shimmer 3.4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+.product-card.anim-shimmer > * { position: relative; z-index: 2; }
+@keyframes card-shimmer {
+  0%   { transform: translateX(-100%); }
+  60%  { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* -- Float: gentle vertical drift -- */
+.product-card.anim-float {
+  animation: card-float 3.5s ease-in-out infinite;
+}
+@keyframes card-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+
+/* -- Highlight: bold yellow border that fades in + out, calls out "hot pick" -- */
+.product-card.anim-highlight {
+  position: relative;
+  box-shadow: 0 0 0 2px var(--yellow), 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+.product-card.anim-highlight::after {
+  content: '★ Top Pick';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--yellow);
+  color: var(--near-black);
+  padding: 4px 10px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  z-index: 3;
+  animation: card-highlight-tag 2s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes card-highlight-tag {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.08); }
+}
+
+/* Respect motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .product-card.anim-pulse,
+  .product-card.anim-glow,
+  .product-card.anim-shimmer::before,
+  .product-card.anim-float,
+  .product-card.anim-highlight::after {
+    animation: none !important;
+  }
+  .product-card.anim-glow {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
+}

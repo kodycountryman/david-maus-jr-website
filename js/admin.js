@@ -23,10 +23,12 @@
         { key: 'hero_index_headline', label: 'Hero Headline' },
         { key: 'hero_index_subtitle', label: 'Hero Subtitle' },
         { key: 'hero_index_image', label: 'Hero Image', kind: 'image' },
+        { key: 'hero_index_image_pos', label: 'Hero Image — Vertical Position', kind: 'position' },
         { key: 'meet_david_title', label: 'Meet David — Title' },
         { key: 'meet_david_intro', label: 'Meet David — Intro' },
         { key: 'meet_david_body', label: 'Meet David — Body', kind: 'longtext' },
-        { key: 'meet_david_image', label: 'Meet David — Photo', kind: 'image' }
+        { key: 'meet_david_image', label: 'Meet David — Photo', kind: 'image' },
+        { key: 'meet_david_image_pos', label: 'Meet David — Photo Vertical Position', kind: 'position' }
       ]
     },
     {
@@ -35,6 +37,7 @@
       fields: [
         { key: 'hero_about_headline', label: 'Hero Headline' },
         { key: 'hero_about_image', label: 'Hero Image', kind: 'image' },
+        { key: 'hero_about_image_pos', label: 'Hero Image — Vertical Position', kind: 'position' },
         { key: 'about_story', label: 'My Story (full)', kind: 'longtext' },
         { key: 'value_1_title', label: 'Value 1 Title' },
         { key: 'value_1_body', label: 'Value 1 Body', kind: 'longtext' },
@@ -52,6 +55,7 @@
       fields: [
         { key: 'hero_brand_headline', label: 'Hero Headline' },
         { key: 'hero_brand_image', label: 'Hero Image', kind: 'image' },
+        { key: 'hero_brand_image_pos', label: 'Hero Image — Vertical Position', kind: 'position' },
         { key: 'brand_intro_primary', label: 'Intro (primary)' },
         { key: 'brand_intro_secondary', label: 'Intro (secondary)', kind: 'longtext' },
         { key: 'stat_1_num', label: 'Stat 1 — Number (auto from YouTube)' },
@@ -71,6 +75,7 @@
         { key: 'hero_picks_headline', label: 'Hero Headline' },
         { key: 'hero_picks_subtitle', label: 'Hero Subtitle' },
         { key: 'hero_picks_image', label: 'Hero Image', kind: 'image' },
+        { key: 'hero_picks_image_pos', label: 'Hero Image — Vertical Position', kind: 'position' },
         { key: 'picks_intro_primary', label: 'Intro (primary)' },
         { key: 'picks_intro_secondary', label: 'Intro (secondary)', kind: 'longtext' }
       ]
@@ -82,6 +87,7 @@
         { key: 'hero_newsletter_headline', label: 'Hero Headline' },
         { key: 'hero_newsletter_subtitle', label: 'Hero Subtitle' },
         { key: 'hero_newsletter_image', label: 'Hero Image', kind: 'image' },
+        { key: 'hero_newsletter_image_pos', label: 'Hero Image — Vertical Position', kind: 'position' },
         { key: 'newsletter_embed_src', label: 'Beehiiv Embed URL' },
         { key: 'newsletter_intro', label: 'Section Intro', kind: 'longtext' }
       ]
@@ -92,6 +98,7 @@
       fields: [
         { key: 'hero_contact_headline', label: 'Hero Headline' },
         { key: 'hero_contact_image', label: 'Hero Image', kind: 'image' },
+        { key: 'hero_contact_image_pos', label: 'Hero Image — Vertical Position', kind: 'position' },
         { key: 'contact_email', label: 'Email' },
         { key: 'contact_phone', label: 'Phone' },
         { key: 'contact_location', label: 'Location' },
@@ -335,9 +342,12 @@
       return;
     }
 
-    tbody.innerHTML = rows.map(p => `
+    tbody.innerHTML = rows.map(p => {
+      const featuredBadge = p.is_featured ? '<span class="mini-badge badge-featured" title="Featured on homepage">★</span>' : '';
+      const animBadge = p.animation ? `<span class="mini-badge badge-anim" title="Animation: ${escapeHtml(p.animation)}">✨</span>` : '';
+      return `
       <tr data-id="${p.id}">
-        <td class="title-cell">${escapeHtml(p.title)}</td>
+        <td class="title-cell">${featuredBadge}${animBadge} ${escapeHtml(p.title)}</td>
         <td><span class="cat-pill">${escapeHtml(catLabel(p.category))}</span></td>
         <td>${p.code ? `<span class="code-pill">${escapeHtml(p.code)}</span>` : '<span style="color:#bbb;">—</span>'}</td>
         <td><span class="link-truncate">${p.link ? escapeHtml(p.link) : '—'}</span></td>
@@ -349,7 +359,8 @@
           </div>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   catFilter.addEventListener('change', renderLinks);
@@ -364,9 +375,18 @@
 
   $('#add-link-btn').addEventListener('click', () => openProductModal(null));
 
+  const ANIMATIONS = [
+    { value: '',          label: 'None (default)' },
+    { value: 'pulse',     label: 'Pulse — gentle scale breathing' },
+    { value: 'glow',      label: 'Glow — soft yellow halo' },
+    { value: 'shimmer',   label: 'Shimmer — light sweep across card' },
+    { value: 'float',     label: 'Float — drifts up & down' },
+    { value: 'highlight', label: '★ Top Pick — bordered w/ badge' },
+  ];
+
   function openProductModal(product) {
     const isEdit = !!product;
-    const p = product || { category: '', title: '', description: '', link: '', code: '', image_url: '', active: 1 };
+    const p = product || { category: '', title: '', description: '', link: '', code: '', image_url: '', active: 1, is_featured: 0, animation: '' };
 
     openModal(`
       <div class="modal-header">
@@ -404,10 +424,23 @@
             <label>Product Image</label>
             ${renderImagePickerHtml(p.image_url)}
           </div>
-          <label class="checkbox-row">
-            <input type="checkbox" name="active" ${p.active ? 'checked' : ''}>
-            <span>Show on site</span>
-          </label>
+          <div class="field">
+            <label>Animation</label>
+            <select name="animation">
+              ${ANIMATIONS.map(a => `<option value="${a.value}" ${a.value === (p.animation || '') ? 'selected' : ''}>${escapeHtml(a.label)}</option>`).join('')}
+            </select>
+            <div class="field-hint">Give this link extra attention on the Product Picks page.</div>
+          </div>
+          <div class="checkbox-stack">
+            <label class="checkbox-row">
+              <input type="checkbox" name="active" ${p.active ? 'checked' : ''}>
+              <span>Show on site</span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="is_featured" ${p.is_featured ? 'checked' : ''}>
+              <span>Feature on homepage <span class="hint-inline">(shows in the homepage Product Picks preview, max 6)</span></span>
+            </label>
+          </div>
         </form>
       </div>
       <div class="modal-footer">
@@ -442,7 +475,9 @@
           link: fd.get('link') || null,
           description: fd.get('description') || null,
           image_url: $('#img-url-input').value || null,
-          active: fd.get('active') ? 1 : 0
+          active: fd.get('active') ? 1 : 0,
+          is_featured: fd.get('is_featured') ? 1 : 0,
+          animation: fd.get('animation') || ''
         };
         try {
           if (isEdit) {
@@ -515,7 +550,23 @@
           input.value = url;
           const preview = root.querySelector(`[data-preview="${key}"]`);
           if (preview) preview.style.backgroundImage = `url("${url}")`;
+          // Also refresh any position preview that references this image
+          root.querySelectorAll(`[data-position-image="${key}"]`).forEach(p => {
+            p.style.backgroundImage = `url("${url}")`;
+          });
         });
+      });
+    });
+
+    // Live position slider preview
+    root.querySelectorAll('[data-position-for]').forEach(slider => {
+      const key = slider.dataset.positionFor;
+      const preview = root.querySelector(`[data-position-preview="${key}"]`);
+      const valueEl = root.querySelector(`[data-position-value="${key}"]`);
+      slider.addEventListener('input', () => {
+        const pct = slider.value + '%';
+        if (preview) preview.style.backgroundPosition = `center ${pct}`;
+        if (valueEl) valueEl.textContent = pct;
       });
     });
   }
@@ -539,6 +590,31 @@
         <div class="info-field">
           <label>${escapeHtml(f.label)}</label>
           <textarea class="longtext" data-content-input="${f.key}">${escapeHtml(val)}</textarea>
+        </div>
+      `;
+    }
+    if (f.kind === 'position') {
+      // Find the image key this position is paired with (drop the "_pos" suffix)
+      const imgKey = f.key.replace(/_pos$/, '');
+      const imgUrl = state.content[imgKey] || '';
+      const pct = Math.max(0, Math.min(100, parseInt(val, 10) || 50));
+      return `
+        <div class="info-field position-field">
+          <label>${escapeHtml(f.label)}</label>
+          <div class="position-wrap">
+            <div class="position-preview" data-position-preview="${f.key}" data-position-image="${imgKey}"
+                 style="background-image:url('${escapeHtml(imgUrl)}'); background-position: center ${pct}%;"></div>
+            <div class="position-slider-row">
+              <span class="position-slider-label">↑ Top</span>
+              <input type="range" min="0" max="100" step="1" value="${pct}"
+                     class="position-slider"
+                     data-content-input="${f.key}"
+                     data-position-for="${f.key}">
+              <span class="position-slider-label">Bottom ↓</span>
+              <span class="position-value" data-position-value="${f.key}">${pct}%</span>
+            </div>
+            <p class="field-hint">Drag slider to shift what part of the image shows through the hero crop.</p>
+          </div>
         </div>
       `;
     }

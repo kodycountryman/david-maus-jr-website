@@ -38,8 +38,9 @@
     const href = p.link || '#';
     const target = (p.link && /^https?:\/\//.test(p.link)) ? ' target="_blank" rel="noopener noreferrer"' : '';
 
+    const animClass = p.animation ? ` anim-${escapeHtml(p.animation)}` : '';
     return `
-      <div class="product-card" data-category="${escapeHtml(p.category)}" data-product-id="${p.id}">
+      <div class="product-card${animClass}" data-category="${escapeHtml(p.category)}" data-product-id="${p.id}">
         ${imgHtml}
         <div class="product-card-body">
           <h3>${escapeHtml(p.title)}</h3>

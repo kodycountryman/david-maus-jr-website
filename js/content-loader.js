@@ -38,6 +38,12 @@
       // If it's an image, set src (and try to preserve query string like ?v=1)
       if (el.tagName === 'IMG') {
         el.src = value;
+        // Apply paired vertical position if one is set (e.g. hero_index_image_pos)
+        const posVal = map[key + '_pos'];
+        if (posVal != null && posVal !== '') {
+          const n = parseInt(posVal, 10);
+          if (!isNaN(n)) el.style.objectPosition = `center ${n}%`;
+        }
         return;
       }
       // If it's an iframe (Beehiiv), set src

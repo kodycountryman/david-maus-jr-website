@@ -103,36 +103,11 @@
     </div>
   </section>
 
-  <!-- Product Picks Preview -->
-  <section class="section">
+  <!-- Product Picks Preview — populated dynamically by js/featured-loader.js -->
+  <section class="section" id="featured-products-section" hidden>
     <div class="container">
       <h2 class="reveal-up" style="text-align:center; font-size:2rem; margin-bottom:40px;">Product Picks</h2>
-      <div class="product-grid reveal-stagger">
-        <div class="product-card">
-          <div class="placeholder-img">Product Image</div>
-          <div class="product-card-body">
-            <h3>Product Name</h3>
-            <p>Short description of why David recommends this product.</p>
-            <a href="#" class="btn btn-yellow">Shop Now</a>
-          </div>
-        </div>
-        <div class="product-card">
-          <div class="placeholder-img">Product Image</div>
-          <div class="product-card-body">
-            <h3>Product Name</h3>
-            <p>Short description of why David recommends this product.</p>
-            <a href="#" class="btn btn-yellow">Shop Now</a>
-          </div>
-        </div>
-        <div class="product-card">
-          <div class="placeholder-img">Product Image</div>
-          <div class="product-card-body">
-            <h3>Product Name</h3>
-            <p>Short description of why David recommends this product.</p>
-            <a href="#" class="btn btn-yellow">Shop Now</a>
-          </div>
-        </div>
-      </div>
+      <div class="product-grid reveal-stagger" id="featured-grid"></div>
       <div class="reveal-up" style="text-align:center; margin-top:40px;">
         <a href="product-picks.html" class="btn btn-dark">View All Picks</a>
       </div>
@@ -188,6 +163,7 @@
   </footer>
 
   <script src="js/content-loader.js"></script>
+  <script src="js/featured-loader.js"></script>
   <script src="js/tracker.js" defer></script>
   <script src="js/main.js"></script>
 </body>

@@ -245,14 +245,15 @@ async function handleProducts(request, env) {
     if (!user) return json({ error: 'Unauthorized' }, 401);
     let body;
     try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
-    const { category, title, description, link, image_url, code, sort_order, active } = body || {};
+    const { category, title, description, link, image_url, code, sort_order, active, is_featured, featured_order, animation } = body || {};
     if (!category || !title) return json({ error: 'category and title required' }, 400);
     const r = await env.DB.prepare(
-      `INSERT INTO products (category, title, description, link, image_url, code, sort_order, active)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO products (category, title, description, link, image_url, code, sort_order, active, is_featured, featured_order, animation)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ).bind(
       category, title, description || null, link || null, image_url || null,
-      code || null, sort_order ?? 999, active === 0 ? 0 : 1
+      code || null, sort_order ?? 999, active === 0 ? 0 : 1,
+      is_featured ? 1 : 0, featured_order ?? 999, animation || ''
     ).run();
     const created = await env.DB
       .prepare('SELECT * FROM products WHERE id = ?').bind(r.meta.last_row_id).first();
@@ -270,7 +271,7 @@ async function handleProductId(request, env, id) {
   if (request.method === 'PUT') {
     let body;
     try { body = await request.json(); } catch { return json({ error: 'Invalid JSON' }, 400); }
-    const allowed = ['category', 'title', 'description', 'link', 'image_url', 'code', 'sort_order', 'active'];
+    const allowed = ['category', 'title', 'description', 'link', 'image_url', 'code', 'sort_order', 'active', 'is_featured', 'featured_order', 'animation'];
     const sets = [], values = [];
     for (const f of allowed) {
       if (f in body) { sets.push(`${f} = ?`); values.push(body[f]); }
