@@ -241,6 +241,14 @@ h3, .h3 {
   filter: none;
 }
 
+/* Admin-controlled override: if site_logo_tint = 'no', strip the filter so
+   pre-colored logos display as-is everywhere. */
+.nav-logo img.logo-untinted,
+.footer-logo img.logo-untinted,
+img.logo-untinted {
+  filter: none !important;
+}
+
 .nav-links {
   display: flex;
   align-items: center;

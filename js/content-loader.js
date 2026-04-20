@@ -75,7 +75,31 @@
       }
     });
 
-    // 3. Dispatch event so other scripts (like products-loader) know content is live
+    // 3. Site logo — every element tagged with data-site-logo gets its src
+    // updated to the current site_logo. Also controls the yellow-tint filter
+    // via site_logo_tint: 'yes' keeps the existing CSS filter, 'no' strips it
+    // (useful for pre-colored logos that shouldn't be recolored).
+    const siteLogo = map.site_logo;
+    const tint = /^(yes|1|true|on)$/i.test(String(map.site_logo_tint || 'yes').trim());
+    if (siteLogo) {
+      document.querySelectorAll('[data-site-logo]').forEach(el => {
+        if (el.tagName === 'IMG') el.src = siteLogo;
+        el.classList.toggle('logo-untinted', !tint);
+      });
+      // Favicon: update every <link rel="icon"|"shortcut icon"|"apple-touch-icon">
+      const faviconLinks = document.querySelectorAll('link[rel~="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]');
+      faviconLinks.forEach(l => { l.href = siteLogo; });
+      // If no favicon link exists, inject one so the browser tab icon updates
+      if (!faviconLinks.length) {
+        const l = document.createElement('link');
+        l.rel = 'icon';
+        l.type = /\.svg/i.test(siteLogo) ? 'image/svg+xml' : 'image/png';
+        l.href = siteLogo;
+        document.head.appendChild(l);
+      }
+    }
+
+    // 4. Dispatch event so other scripts (like products-loader) know content is live
     document.dispatchEvent(new CustomEvent('content-loaded', { detail: { map } }));
   }
 

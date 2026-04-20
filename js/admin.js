@@ -17,6 +17,14 @@
 
   const INFO_SECTIONS = [
     {
+      id: 'branding',
+      label: '🎨 Branding (logo + favicon)',
+      fields: [
+        { key: 'site_logo', label: 'Site Logo — shows in navbar, drawer, footer, and browser tab (favicon)', kind: 'image' },
+        { key: 'site_logo_tint', label: 'Auto-tint logo yellow on dark backgrounds?', kind: 'boolean' }
+      ]
+    },
+    {
       id: 'homepage',
       label: 'Homepage',
       fields: [
@@ -305,6 +313,20 @@
   async function loadContent() {
     const { map } = await api('/api/content');
     state.content = map;
+    applyAdminBranding(map);
+  }
+
+  // Apply site_logo to admin page's own logo imgs + favicon. Called once
+  // content is loaded so the admin UI also reflects the current brand.
+  function applyAdminBranding(map) {
+    const logo = map.site_logo;
+    const tint = /^(yes|1|true|on)$/i.test(String(map.site_logo_tint || 'yes').trim());
+    if (!logo) return;
+    document.querySelectorAll('[data-site-logo]').forEach(el => {
+      if (el.tagName === 'IMG') el.src = logo;
+      el.classList.toggle('logo-untinted', !tint);
+    });
+    document.querySelectorAll('link[rel~="icon"]').forEach(l => { l.href = logo; });
   }
   async function loadMedia() {
     try {
@@ -621,6 +643,18 @@
         <div class="info-field">
           <label>${escapeHtml(f.label)}</label>
           <textarea class="longtext" data-content-input="${f.key}">${escapeHtml(val)}</textarea>
+        </div>
+      `;
+    }
+    if (f.kind === 'boolean') {
+      const isYes = /^(yes|1|true|on)$/i.test(String(val).trim());
+      return `
+        <div class="info-field">
+          <label>${escapeHtml(f.label)}</label>
+          <select data-content-input="${f.key}" class="bool-select">
+            <option value="yes" ${isYes ? 'selected' : ''}>Yes</option>
+            <option value="no" ${!isYes ? 'selected' : ''}>No</option>
+          </select>
         </div>
       `;
     }

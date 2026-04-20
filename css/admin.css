@@ -242,6 +242,13 @@ input, textarea, select {
   font-size: 13px;
 }
 
+/* Respect admin override: untint the logo if site_logo_tint='no' */
+.login-logo img.logo-untinted,
+.admin-logo.logo-untinted,
+img.logo-untinted {
+  filter: none !important;
+}
+
 .admin-logo {
   width: 32px;
   height: 32px;
